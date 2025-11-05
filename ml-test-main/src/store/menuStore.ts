@@ -81,7 +81,7 @@ export const useMenuStore = create<MenuState>()(
                 menuName: menu.menu_name,
                 menuNameEn: menu.menu_name_en,
                 menuPrice: menu.menu_price,
-                imageUrl: menu.menuImgUrl,
+                imageUrl: menu.menu_img_url,
                 categoryId: menu.category_id,
               }));
             return {
