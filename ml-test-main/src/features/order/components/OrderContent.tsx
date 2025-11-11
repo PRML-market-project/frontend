@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import OrderHistoryPage from '@/pages/OrderHistoryPage';
+import MarketMap from '@/pages/market-map';
 import MenuContent from './MenuContent';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useParams } from 'react-router-dom';
@@ -20,7 +20,7 @@ const OrderContent = () => {
     }
   }, [kioskId, fetchMenusByCategory]);
 
-  return currentView === 'menu' ? <MenuContent /> : <OrderHistoryPage />;
+  return currentView === 'menu' ? <MenuContent /> : <MarketMap />;
 };
 
 export default OrderContent;

@@ -79,7 +79,7 @@ const CategoryList = () => {
                 'shadow-inner ring-2 ring-indigo-500'
             )}
           >
-            {language === 'en' ? 'Order History' : '주문 내역 조회'}
+            {language === 'en' ? 'map' : '지도'}
           </button>
         </div>
       </aside>

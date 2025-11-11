@@ -2,12 +2,9 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Menu, Category, MenuResponse } from '../types/menu';
 import { useNavigationStore } from './navigationStore';
-// mock 데이터 임포트
 import { mockCategories } from '../mock/categories';
 import { mockMenuItems } from '../mock/menuItems';
 
-// `Menu`와 `Category` 타입 재정의 (mock 데이터와 일치하도록)
-// 실제 프로젝트에서는 백엔드 API 응답과 mock 데이터의 타입이 일치하는지 확인해야 합니다.
 type LocalMenu = {
   menu_id: number;
   category_id: number;
@@ -41,21 +38,30 @@ export const useMenuStore = create<MenuState>()(
 
       fetchMenusByCategory: async (kioskId: number) => {
         set({ isLoading: true, error: null });
+
         try {
+          const backendUrl = import.meta.env.VITE_API_URL;
           const response = await fetch(
-            `${
-              import.meta.env.VITE_API_URL
-            }/api/kiosk/${kioskId}/menu-by-category`
+            `${backendUrl}/api/kiosk/${kioskId}/menu-by-category`
           );
 
           if (!response.ok) {
-            // API 요청 실패 시 에러를 던져 catch 블록으로 이동
             throw new Error('API request failed');
           }
+
           const data: MenuResponse = await response.json();
 
-          // Filter out the "전체" category
-          const filteredCategories = data.filter(
+          const fixedData = data.map((category) => ({
+            ...category,
+            menus: category.menus.map((menu) => ({
+              ...menu,
+              imageUrl: menu.imageUrl.startsWith('http')
+                ? menu.imageUrl
+                : `${backendUrl}${menu.imageUrl}`,
+            })),
+          }));
+
+          const filteredCategories = fixedData.filter(
             (category) => category.categoryName !== '전체'
           );
 
@@ -64,7 +70,6 @@ export const useMenuStore = create<MenuState>()(
             isLoading: false,
           });
 
-          // Set the first category as selected if there are categories
           if (filteredCategories.length > 0) {
             useNavigationStore
               .getState()
@@ -72,22 +77,26 @@ export const useMenuStore = create<MenuState>()(
           }
         } catch (error) {
           console.error('Failed to fetch menus from API, using mock data:', error);
-          // API 통신 실패 시, 로컬 목업 데이터 사용
-          const combinedMockData = mockCategories.map(category => {
+
+          const backendUrl = import.meta.env.VITE_API_URL;
+
+          const combinedMockData = mockCategories.map((category) => {
             const menus = mockMenuItems
-              .filter(menu => menu.category_id === category.category_id)
-              .map(menu => ({
+              .filter((menu) => menu.category_id === category.category_id)
+              .map((menu) => ({
                 menuId: menu.menu_id,
                 menuName: menu.menu_name,
                 menuNameEn: menu.menu_name_en,
                 menuPrice: menu.menu_price,
-                imageUrl: menu.menu_img_url,
+                imageUrl: menu.menu_img_url.startsWith('http')
+                  ? menu.menu_img_url
+                  : `${backendUrl}${menu.menu_img_url}`,
                 categoryId: menu.category_id,
               }));
             return {
               categoryId: category.category_id,
               categoryName: category.category_name,
-              categoryNameEn: category.category_name_en, // 'Category' 타입에 필요한 속성 추가
+              categoryNameEn: category.category_name_en,
               menus: menus,
             };
           });
