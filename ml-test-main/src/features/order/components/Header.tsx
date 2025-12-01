@@ -64,7 +64,7 @@ const Header = () => {
           </span>
         </div>
         <h1 className='text-xl font-extrabold text-indigo-900 tracking-tight whitespace-nowrap'>
-          {language === 'en' ? 'Malang Order' : '말랑 오더'}
+          {language === 'en' ? 'Daejo Market Kiosk' : '대조시장 키오스크'}
         </h1>
 
         {/* Settings Button */}
@@ -92,15 +92,24 @@ const Header = () => {
       </div>
 
       {/* 중간 문구 */}
+      {/*
       <span className='text-lg text-indigo-900 font-medium ml-4 whitespace-nowrap'>
         {language === 'en'
           ? 'Call "Mallang" to start ordering.'
           : '"말랑아" 라고 불러 주문을 시작해 보세요'}
       </span>
+      */}
+      <span className='text-lg text-indigo-900 font-medium ml-4 whitespace-nowrap'>
+        {language === 'en'
+          ? 'Daejo Market'
+          : '대조시장'}
+      </span>
+
+
 
       <div className='flex items-center gap-4'>
         <div className='text-lg font-semibold text-indigo-900 flex items-center gap-2'>
-          <span>{language === 'en' ? 'Table Number:' : '테이블 번호:'}</span>
+          <span>{language === 'en' ? 'Kiosk Number:' : '키오스크 번호:'}</span>
           <span className='bg-indigo-300 w-10 h-10 rounded-full flex items-center justify-center text-2xl text-indigo-900 font-bold shadow-sm select-none'>
             {kioskNumber}
           </span>

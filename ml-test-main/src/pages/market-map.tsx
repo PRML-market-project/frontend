@@ -16,14 +16,14 @@ const MarketMap: React.FC = () => {
   return (
     <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-4">
       <h1 className="text-2xl font-bold mb-6">
-        {language === 'en' ? 'Daejo Market Map' : '대조시장 지도'}
+        {/*language === 'en' ? 'Daejo Market Map' : '대조시장 지도'*/}
       </h1>
 
       <div className="relative shadow-lg rounded-xl bg-white overflow-hidden">
         <svg
-          width="1400"
-          height="700"
-          viewBox="0 0 2000 1000"
+          width="2000"
+          height="1600"
+          viewBox="0 0 2200 1800"
           className="rounded-lg"
         >
           {/* 지도 이미지 */}

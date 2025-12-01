@@ -33,7 +33,7 @@ const MainLayout = () => {
         </div>
 
         {/* 오른쪽 장바구니*/}
-          <Cart />
+          {/*<Cart /> */}
         </div>
       </div>
   );
