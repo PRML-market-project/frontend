@@ -1,28 +1,33 @@
-import { useEffect, useState, useRef } from 'react';
-import SpeechRecognition, {
-  useSpeechRecognition,
-} from 'react-speech-recognition';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import SpeechRecognition, { useSpeechRecognition } from 'react-speech-recognition';
 import { useChatStore } from '@/features/chat/store/chatStore';
 import { useVoiceStore } from '../store/voiceStore';
 
 import { useGpt } from '../hooks/useGpt';
 import { useLanguageStore } from '@/store/languageStore';
 import { useParams } from 'react-router-dom';
+
 const apiUrl = import.meta.env.VITE_GPT_API_URL;
 
 const Voice = () => {
   const { listening, transcript, resetTranscript } = useSpeechRecognition();
   const { isCovered, setIsCovered } = useVoiceStore();
+
   const [detectedCount, setDetectedCount] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedText, setCapturedText] = useState('');
+
   const lastTextTimeRef = useRef<number>(0);
   const keywordIndexRef = useRef<number>(-1);
   const detectedKeywordRef = useRef<string | null>(null);
+
   const { adminId, kioskId } = useParams();
 
   const { language } = useLanguageStore();
   const langCode = language === 'en' ? 'en-US' : 'ko-KR';
+
+  // ✅ DEV 입력 상태
+  const [devInput, setDevInput] = useState('');
 
   // 여러 키워드 배열
   const KEYWORDS =
@@ -39,7 +44,7 @@ const Voice = () => {
           'malone',
           'millione',
           'milan',
-        ] // 영어 키워드 예시//////////////////////////////////////////추가 가능
+        ]
       : [
           '말랑아',
           '빨랑아',
@@ -54,34 +59,107 @@ const Voice = () => {
           '몰랑',
           '몰라',
           '빨랑',
-        ]; // 한국어 키워드 예시
+        ];
 
   const addMessage = useChatStore((state) => state.addMessage);
   const updateLastMessage = useChatStore((state) => state.updateLastMessage);
   const setIsCapturing = useChatStore((state) => state.setIsCapturing);
   const isCapturing = useChatStore((state) => state.isCapturing);
+
   const { sendTextToApi } = useGpt({ apiUrl });
 
-  // 🧠 실시간 텍스트 감지
+  /**
+   * =========================================
+   * ✅ DEV 전용: 키보드 입력을 "WebSpeech와 동일한 흐름"으로 실행
+   * =========================================
+   * - (키워드 감지 발생 시점과 동일하게) 빈 user 메시지 생성
+   * - updateLastMessage로 텍스트를 넣어 "타이핑/갱신" 흐름 유지
+   * - 마지막에 isCapturing false로 종료
+   * - WebSpeech 종료 조건(2초 무음) 대신, 키보드에서는 즉시 API 호출
+   *
+   * 원하는 경우: 2초 타이머 방식도 그대로 타게 만들 수 있는데,
+   * 키보드는 "최종 텍스트가 이미 확정"이라 보통 즉시 호출이 자연스러움.
+   */
+  const runDevAsIfWebSpeech = useCallback(
+    async (fullText: string) => {
+      const now = Date.now();
+
+      // 1) "키워드 감지 후 캡처 시작" 상태 세팅을 그대로 흉내
+      setIsProcessing(true);
+      setDetectedCount((prev) => prev + 1);
+      setIsCapturing(true);
+      setCapturedText('');
+      lastTextTimeRef.current = now;
+
+      // keyword 관련 ref도 실제 흐름과 충돌 없게 리셋/지정
+      keywordIndexRef.current = 0;
+      detectedKeywordRef.current = 'DEV';
+
+      // 2) WebSpeech에서 키워드 감지되면 빈 버블 먼저 생성하는 것과 동일
+      addMessage({
+        text: '',
+        isUser: true,
+        timestamp: now,
+      });
+
+      // 3) WebSpeech의 transcript 업데이트처럼 마지막 메시지 업데이트
+      //    (짧은 딜레이를 주면 UI가 "업데이트되는" 느낌도 동일)
+      window.setTimeout(() => {
+        updateLastMessage(fullText);
+        setCapturedText(fullText);
+        lastTextTimeRef.current = Date.now();
+      }, 30);
+
+      // 4) 키보드는 최종값이 확정이므로, WebSpeech의 "무음 2초 후 처리" 대신 즉시 처리
+      //    (원하면 아래를 setTimeout(2000)으로 바꿔서 완전히 동일하게도 가능)
+      try {
+        await sendTextToApi(fullText, adminId, kioskId);
+      } catch (err) {
+        console.error('Error processing DEV input:', err);
+      } finally {
+        // 5) 종료 처리(원래 WebSpeech 종료 처리와 동일하게 정리)
+        setIsCapturing(false);
+        setIsProcessing(false);
+
+        resetTranscript();
+        keywordIndexRef.current = -1;
+        detectedKeywordRef.current = null;
+        setCapturedText('');
+      }
+    },
+    [
+      addMessage,
+      updateLastMessage,
+      sendTextToApi,
+      adminId,
+      kioskId,
+      resetTranscript,
+      setIsCapturing,
+      setIsProcessing,
+    ]
+  );
+
+  /**
+   * 🧠 실시간 텍스트 감지 (WebSpeech transcript)
+   */
   useEffect(() => {
     if (transcript) {
       lastTextTimeRef.current = Date.now();
 
-      if (
-        isCapturing &&
-        keywordIndexRef.current !== -1 &&
-        detectedKeywordRef.current
-      ) {
+      if (isCapturing && keywordIndexRef.current !== -1 && detectedKeywordRef.current) {
         const textAfterKeyword = transcript
           .slice(keywordIndexRef.current + detectedKeywordRef.current.length)
           .trim();
+
         setCapturedText(textAfterKeyword);
         updateLastMessage(textAfterKeyword);
       }
     }
   }, [transcript, isCapturing, updateLastMessage]);
 
-  // 🔁 일정 시간 텍스트 없으면 인식 종료 및 처리
+  /**
+   * 🔁 일정 시간 텍스트 없으면 인식 종료 및 처리 (WebSpeech)
+   */
   useEffect(() => {
     if (!isCapturing) return;
 
@@ -105,9 +183,11 @@ const Voice = () => {
     }, 100);
 
     return () => clearInterval(checkInterval);
-  }, [isCapturing, capturedText, sendTextToApi]);
+  }, [isCapturing, capturedText, sendTextToApi, adminId, kioskId, resetTranscript, setIsCapturing]);
 
-  // 🎯 키워드 감지 (여러 키워드 중 첫 발견된 키워드 선택)
+  /**
+   * 🎯 키워드 감지 (WebSpeech transcript)
+   */
   useEffect(() => {
     if (!transcript || isProcessing) return;
 
@@ -119,7 +199,7 @@ const Voice = () => {
       if (idx !== -1) {
         foundKeyword = keyword;
         foundIndex = idx;
-        break; // 첫 발견 키워드만 처리
+        break;
       }
     }
 
@@ -138,29 +218,7 @@ const Voice = () => {
         timestamp: Date.now(),
       });
     }
-  }, [transcript, isProcessing, KEYWORDS]);
-
-  // ✅ 언어 변경 또는 덮개 해제 시 마이크 재시작 강제 보장 + 디버깅 로그
-  // useEffect(() => {
-  //   const tryStartListening = async () => {
-  //     console.log('🎤 Restarting listening...');
-  //     await SpeechRecognition.stopListening();
-  //     setTimeout(() => {
-  //       SpeechRecognition.startListening({
-  //         continuous: true,
-  //         language: langCode,
-  //       });
-  //       setTimeout(() => {
-  //         console.log('🎧 listening (delayed):', listening);
-  //         console.log('🗣️ transcript (delayed):', transcript);
-  //       }, 1000);
-  //     }, 300);
-  //   };
-
-  //   if (!isCovered && !listening) {
-  //     tryStartListening();
-  //   }
-  // }, [language, isCovered, listening, langCode, transcript]);
+  }, [transcript, isProcessing, KEYWORDS, addMessage, setIsCapturing]);
 
   // 🔇 언마운트 시 마이크 정지
   useEffect(() => {
@@ -176,10 +234,49 @@ const Voice = () => {
   }, [listening, transcript]);
 
   return (
-    <div className='p-6 h-fit rounded-xl shadow-lg bg-white text-center'>
+    <div className="p-6 h-fit rounded-xl shadow-lg bg-white text-center">
+      {/* ✅ DEV 전용 키보드 입력 UI */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-3 rounded-lg border border-indigo-200 bg-indigo-50 text-left">
+          <div className="text-xs text-indigo-700 mb-2">
+            DEV: 키보드 입력을 WebSpeech 파이프라인처럼 처리 (빈 버블 생성 → updateLastMessage → API 호출)
+          </div>
+
+          <div className="flex gap-2">
+            <textarea
+              className="flex-1 p-2 border rounded-md text-sm resize-none"
+              rows={2}
+              placeholder="DEV: 여기에 문장 입력 후 Enter (Shift+Enter 줄바꿈)"
+              value={devInput}
+              onChange={(e) => setDevInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  const text = devInput.trim();
+                  if (!text) return;
+                  setDevInput('');
+                  runDevAsIfWebSpeech(text);
+                }
+              }}
+            />
+            <button
+              className="px-4 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700"
+              onClick={() => {
+                const text = devInput.trim();
+                if (!text) return;
+                setDevInput('');
+                runDevAsIfWebSpeech(text);
+              }}
+            >
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+
       {isCovered && (
         <div
-          className='
+          className="
             absolute top-0 left-0 w-screen h-screen p-6
             flex flex-col items-center justify-center
             cursor-pointer
@@ -188,7 +285,7 @@ const Voice = () => {
             rounded-none
             shadow-xl
             backdrop-blur-md
-          '
+          "
           onClick={() => {
             setIsCovered(false);
             return SpeechRecognition.startListening({
@@ -197,12 +294,11 @@ const Voice = () => {
             });
           }}
         >
-          <div className='absolute top-6 left-6 text-2xl font-bold text-indigo-600 select-none drop-shadow-md'>
+          <div className="absolute top-6 left-6 text-2xl font-bold text-indigo-600 select-none drop-shadow-md">
             Mallang Order
           </div>
 
-          {/* ✅ 한/영 전환 버튼 */}
-          <div className='absolute top-6 right-6'>
+          <div className="absolute top-6 right-6">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -211,16 +307,16 @@ const Voice = () => {
                   language: state.language === 'en' ? 'ko' : 'en',
                 }));
               }}
-              className='px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition'
+              className="px-4 py-2 rounded-lg bg-indigo-600 text-white font-semibold shadow hover:bg-indigo-700 transition"
             >
               {language === 'en' ? '한글' : 'ENG'}
             </button>
           </div>
 
           <div
-            className='w-[300px] h-[300px] rounded-full bg-gradient-to-br from-indigo-200 to-indigo-400
+            className="w-[300px] h-[300px] rounded-full bg-gradient-to-br from-indigo-200 to-indigo-400
               text-indigo-900 font-extrabold text-7xl tracking-tight flex items-center justify-center
-              shadow-[0_10px_30px_rgba(99,102,241,0.4)] border border-indigo-300 relative overflow-hidden'
+              shadow-[0_10px_30px_rgba(99,102,241,0.4)] border border-indigo-300 relative overflow-hidden"
           >
             <span
               style={{
@@ -234,7 +330,7 @@ const Voice = () => {
             </span>
           </div>
 
-          <p className='text-[2.5rem] sm:text-4xl md:text-5xl font-bold text-indigo-600 text-center animate-pulse select-none leading-tight whitespace-pre-line'>
+          <p className="text-[2.5rem] sm:text-4xl md:text-5xl font-bold text-indigo-600 text-center animate-pulse select-none leading-tight whitespace-pre-line">
             {language === 'en'
               ? 'Touch the screen\nto start your order'
               : '화면을 터치해\n주문을 시작하세요'}
@@ -243,14 +339,14 @@ const Voice = () => {
       )}
 
       {isCapturing ? (
-        <div className='bg-indigo-100 rounded-lg border border-indigo-300 p-2 mt-2 shadow-sm'>
-          <p className='text-sm text-indigo-900 mb-1'>
+        <div className="bg-indigo-100 rounded-lg border border-indigo-300 p-2 mt-2 shadow-sm">
+          <p className="text-sm text-indigo-900 mb-1">
             {language === 'en' ? 'Recognizing speech…' : '음성 인식 중…'}
           </p>
         </div>
       ) : (
-        <div className='flex flex-col items-center'>
-          <p className='text-sm text-indigo-600'>
+        <div className="flex flex-col items-center">
+          <p className="text-sm text-indigo-600">
             {listening ? (
               language === 'en' ? (
                 <>
