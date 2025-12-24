@@ -1,14 +1,18 @@
 import { create } from 'zustand';
 
+type StartMicOptions = { lang?: string };
+
 interface VoiceStore {
   isCovered: boolean;
   setIsCovered: (isCovered: boolean) => void;
 
   isMicOn: boolean;
-  startMic: () => void;
-  stopMic: () => void;
-  startHotwordDetection: () => void;
-  stopHotwordDetection: () => void;
+
+  startMic: (opts?: StartMicOptions) => Promise<void> | void;
+  stopMic: () => Promise<void> | void;
+
+  startHotwordDetection: () => Promise<void> | void;
+  stopHotwordDetection: () => Promise<void> | void;
 }
 
 export const useVoiceStore = create<VoiceStore>((set) => ({
@@ -16,9 +20,15 @@ export const useVoiceStore = create<VoiceStore>((set) => ({
   setIsCovered: (isCovered) => set({ isCovered }),
 
   isMicOn: false,
-  startMic: () => set({ isMicOn: true }),
-  stopMic: () => set({ isMicOn: false }),
 
-  startHotwordDetection: () => {},
-  stopHotwordDetection: () => {},
+  // 원래 마이크 시작 로직이 있으면 여기에 연결
+  startMic: async (_opts) => {
+    set({ isMicOn: true });
+  },
+  stopMic: async () => {
+    set({ isMicOn: false });
+  },
+
+  startHotwordDetection: async () => {},
+  stopHotwordDetection: async () => {},
 }));
