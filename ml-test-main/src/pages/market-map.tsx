@@ -1,68 +1,54 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import stores from '@/data/stores.json';
-import { useLanguageStore } from '@/store/languageStore';
+import React, { useEffect } from "react"; // useEffect 필요할 수 있음
+import { MapView } from "@/components/market/MapView";
+import { ShopDetailsPanel } from "@/components/market/ShopDetailsPanel";
+import { marketShops } from "@/data/market-shops";
+import { useMapStore } from "@/store/mapStore"; // Store Import
 
-const MarketMap: React.FC = () => {
-  const { language } = useLanguageStore();
-  const [selected, setSelected] = useState<number | null>(null);
+export default function MarketMapPage() {
+  // ❌ 기존 useState 제거
+  // const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
+  // const [showNavigation, setShowNavigation] = useState(false);
 
-  const handleSelect = (id: number) => {
-    setSelected(id);
-    // 3번 깜빡임 후 자동 해제 (3초 후)
-    setTimeout(() => setSelected(null), 3000);
+  // ✅ 전역 Store 사용
+  const {
+    selectedShopId,
+    isNavigationActive,
+    selectShop,
+    setNavigation,
+    resetMap
+  } = useMapStore();
+
+  // 컴포넌트 마운트 시 초기화가 필요하다면 사용 (선택사항)
+  // useEffect(() => {
+  //   return () => resetMap(); // 페이지 나갈 때 초기화
+  // }, []);
+
+  const handleShopSelect = (id: string) => {
+    // 가게를 직접 클릭했을 때는 길안내는 끄고 가게만 선택
+    selectShop(id);
   };
 
+  const currentShop = marketShops.find((s) => s.id === selectedShopId) || null;
+
   return (
-    <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-4">
-      <h1 className="text-2xl font-bold mb-6">
-        {/*language === 'en' ? 'Daejo Market Map' : '대조시장 지도'*/}
-      </h1>
-
-      <div className="relative shadow-lg rounded-xl bg-white overflow-hidden">
-        <svg
-          width="2000"
-          height="1600"
-          viewBox="0 0 2200 1800"
-          className="rounded-lg"
-        >
-          {/* 지도 이미지 */}
-          <image href="/images/daecho_map.png" width="2000" height="1000" />
-
-          {/* 점포 표시 */}
-          {stores.map((store) => (
-            <motion.rect
-              key={store.id}
-              x={store.x}
-              y={store.y}
-              width={store.width}
-              height={store.height}
-              rx="4"
-              ry="4"
-              fill="transparent" // ✅ 기본색 없음
-              stroke="orange"
-              strokeWidth="2"
-              onClick={() => handleSelect(store.id)}
-              cursor="pointer"
-              animate={
-                selected === store.id
-                  ? { opacity: [1, 0.2, 1, 0.2, 1, 0.2, 1] } // ✅ 총 3번 깜빡임
-                  : { opacity: 1 }
-              }
-              transition={{ duration: 3, ease: 'easeInOut' }} // 3초 동안 깜빡임 완료
-            />
-          ))}
-        </svg>
-
-        {/* 선택된 점포 이름 표시 */}
-        {selected && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 bg-white/90 px-4 py-2 rounded-lg shadow-md text-gray-800 font-semibold">
-            {stores.find((s) => s.id === selected)?.name}
-          </div>
-        )}
+    <main className="grid grid-cols-[1fr_24rem] h-screen w-full bg-[#F5F3F0] overflow-hidden font-sans">
+      <div className="min-w-0 h-[calc(100vh-320px)] relative overflow-hidden shadow-inner">
+        <MapView
+          shops={marketShops}
+          selectedShopId={selectedShopId} // Store 값 전달
+          onShopSelect={handleShopSelect}
+          showNavigation={isNavigationActive} // Store 값 전달
+        />
       </div>
-    </div>
-  );
-};
 
-export default MarketMap;
+      <aside className="h-[calc(100vh-310px)] bg-white shadow-2xl z-10 border-l border-[#E5E3E0] overflow-hidden">
+        <ShopDetailsPanel
+          shop={currentShop}
+          isNavigating={isNavigationActive} // Store 값 전달
+          // 버튼 클릭 시 길안내 토글 (스토어 함수 사용)
+          onStartNavigation={() => setNavigation(!isNavigationActive)}
+        />
+      </aside>
+    </main>
+  );
+}

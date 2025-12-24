@@ -8,6 +8,8 @@ import { getSpeech } from '@/utils/getSpeech';
 import { useLanguageStore } from '@/store/languageStore';
 import { useParams } from 'react-router-dom';
 import { useOrderHistoryStore } from '@/store/orderHistoryStore';
+import { useMapStore } from '@/store/mapStore';
+import { marketShops } from '@/data/market-shops'; // 경로에 맞게 수정해주세요
 
 interface UseTextApiProps {
   apiUrl: string;
@@ -18,6 +20,7 @@ interface ResponseItem {
   category_id?: number;
   quantity?: number;
   state?: string;
+  target_id?: string;
 }
 
 interface TextApiResponse {
@@ -47,6 +50,12 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
   const { language } = useLanguageStore();
   const { kioskId } = useParams();
   const { fetchOrders } = useOrderHistoryStore();
+  const { selectAndNavigate } = useMapStore();
+  const getJosa = (word: string, josa1: string, josa2: string) => {
+    const lastChar = word.charCodeAt(word.length - 1);
+    const hasJongseong = (lastChar - 0xAC00) % 28 > 0;
+    return hasJongseong ? josa1 : josa2;
+  };
 
   const processIntent = (
     intent: string,
@@ -67,11 +76,11 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
     }
 
     switch (intent) {
-      case 'get_category':
+      case 'get_store':
         updateLastMessage(chat_message);
         getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
         console.log('카테고리 탐색:', items);
-        if (items.length > 0 && items[0]?.category_id !== null) {
+        if (items.length > 0 && items[0]?.category_id != null) {
           setCurrentView('menu');
           if (items[0]?.menu_id !== null) {
             setCurrentMenu(items[0].menu_id);
@@ -96,128 +105,39 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         }
         break;
 
-      case 'update_cart':
-        updateLastMessage(chat_message);
-        getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+      //위치 안내 처리
+      case 'get_location':
+        let finalMessage = chat_message; // 기본값은 GPT가 준 메시지
 
-        console.log('장바구니 수정:', items);
-        items.forEach((item) => {
-          // Handle removeall state first
-          if (item.state === 'removeall') {
-            clearCart();
-            return;
-          }
+        console.log('위치 안내:', items);
 
-          // Handle other states (add, remove)
-          if (
-            item.menu_id !== undefined &&
-            item.quantity !== undefined &&
-            item.state
-          ) {
-            // Find the menu across all categories
-            let foundMenu = null;
-            for (const category of categories) {
-              const menus = getMenusByCategory(category.categoryId);
-              const menu = menus.find((m) => m.menuId === item.menu_id);
-              if (menu) {
-                foundMenu = menu;
-                break;
-              }
-            }
+        if (items.length > 0 && items[0]?.target_id) {
+          const targetId = String(items[0].target_id);
 
-            if (foundMenu) {
-              switch (item.state) {
-                case 'add':
-                  addItem(foundMenu, item.quantity || 1);
-                  break;
-                case 'remove':
-                  updateQuantity(item.menu_id, item.quantity * -1 || -1);
-                  break;
-              }
-            }
-          }
-        });
-        break;
+      // 1. 전체 데이터에서 해당 ID의 가게 정보를 찾음
+          const shopInfo = marketShops.find((s) => s.id === targetId);
 
-      case 'place_order':
-        updateLastMessage(chat_message);
-        getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+      // 2. 가게 정보가 있다면 메시지 강제 변경
+          if (shopInfo) {
+        // "골드축산은" vs "다이소는" 처리
+            const josa = getJosa(shopInfo.name, '은', '는');
 
-        if (cartItems.length === 0) {
-          const failMessage =
-            language === 'en'
-              ? 'Your cart is empty. Please add items to your cart.'
-              : '장바구니가 비어있습니다. 메뉴를 추가해주세요.';
+        // 예: "골드축산은 서측 A구역 84번에 있어요."
+            finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}번에 있어요.`;
+           }
 
-          updateLastMessage(failMessage);
-          getSpeech(failMessage, language === 'en' ? 'en' : 'ko');
-          return;
+      // 3. 변경된 메시지로 업데이트 및 음성 출력
+          updateLastMessage(finalMessage);
+          getSpeech(finalMessage, language === 'en' ? 'en' : 'ko');
+
+      // 4. 뷰 변경 및 지도 활성화
+          setCurrentView('map');
+          selectAndNavigate(targetId);
+        } else {
+      // ID를 못 찾았을 경우 GPT 원본 메시지 출력
+          updateLastMessage(chat_message);
+          getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
         }
-
-        try {
-          const orderItems = cartItems.map((item) => ({
-            menuId: item.menu.menuId,
-            quantity: item.quantity,
-          }));
-
-          fetch(`${import.meta.env.VITE_API_URL}/api/order`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              kioskId: Number(kioskId),
-              items: orderItems,
-            }),
-          })
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error('Failed to place order');
-              }
-
-              setShowOrderModal(true);
-            })
-            .catch((error) => {
-              console.error('Error placing order:', error);
-            });
-        } catch (error) {
-          console.error('Error in place_order intent:', error);
-        }
-        break;
-
-      case 'get_order_history':
-        console.log('주문 내역조회:', items);
-        fetchOrders(Number(kioskId)).then(() => {
-          const currentOrders = useOrderHistoryStore.getState().orders;
-          totalAmount = currentOrders.reduce((sum, order) => {
-            const orderTotal = order.items.reduce(
-              (itemSum, item) => itemSum + item.menuPrice * item.quantity,
-              0
-            );
-            return sum + orderTotal;
-          }, 0);
-
-          formattedAmount = new Intl.NumberFormat('ko-KR', {
-            style: 'currency',
-            currency: 'KRW',
-          }).format(totalAmount);
-
-          historyMessage =
-            language === 'en'
-              ? `I'll show you your order history. Your total amount is ${formattedAmount}`
-              : `주문 내역을 보여드리겠습니다. 총 주문 금액은 ${formattedAmount}입니다`;
-
-          if (totalAmount === 0) {
-            historyMessage =
-              language === 'en'
-                ? `I'll show you your order history.`
-                : `주문 내역을 보여드리겠습니다. `;
-          }
-
-          updateLastMessage(historyMessage);
-          getSpeech(historyMessage, language === 'en' ? 'en' : 'ko');
-          setCurrentView('orderHistory');
-        });
         break;
 
       default:

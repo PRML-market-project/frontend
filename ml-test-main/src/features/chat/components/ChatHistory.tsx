@@ -47,35 +47,6 @@ const ChatHistory = () => {
       console.error('TTS test failed:', error);
     }
   }, [language, isCovered]);
-
-  /**
-   * 버튼으로 "마이크 ON" 시:
-   * - hotword detection 시작
-   * - 실제 마이크(STT)도 시작(원하면 hotword만 시작하도록 바꿔도 됨)
-   */
-  const handleToggleMic = useCallback(async () => {
-    try {
-      if (isMicOn) {
-        stopMic?.();
-        stopHotwordDetection?.();
-        return;
-      }
-
-      // hotword 감지 + 마이크 켜기
-      await startHotwordDetection?.();
-      await startMic?.({ lang: language === 'en' ? 'en' : 'ko' });
-    } catch (e) {
-      console.error('Mic/Hotword toggle failed:', e);
-    }
-  }, [
-    isMicOn,
-    language,
-    startHotwordDetection,
-    stopHotwordDetection,
-    startMic,
-    stopMic,
-  ]);
-
   /**
    * 화면 덮힘(예: 주문 플로우/모달 등) 상태면 자동으로 마이크/감지 끄기
    */
@@ -120,28 +91,6 @@ const ChatHistory = () => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* 마이크 토글 버튼 (우하단) */}
-      <button
-        type="button"
-        onClick={handleToggleMic}
-        disabled={isCovered}
-        aria-pressed={isMicOn}
-        aria-label={isMicOn ? '마이크 끄기' : '마이크 켜기'}
-        className={[
-          'absolute bottom-4 right-4',
-          'w-12 h-12 rounded-full shadow-lg',
-          'flex items-center justify-center',
-          'transition active:scale-95',
-          isCovered ? 'opacity-50 cursor-not-allowed' : '',
-          isMicOn
-            ? 'bg-red-600 text-white'
-            : 'bg-indigo-600 text-white hover:bg-indigo-700',
-        ].join(' ')}
-        title={isMicOn ? '마이크/핫워드 감지 끄기' : '마이크/핫워드 감지 켜기'}
-      >
-        {/* 아이콘 라이브러리 없으면 텍스트로 */}
-        {isMicOn ? '■' : '🎤'}
-      </button>
     </div>
   );
 };
