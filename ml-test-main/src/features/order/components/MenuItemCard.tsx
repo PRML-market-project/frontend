@@ -56,12 +56,7 @@ const MenuItemCard = ({ menu, isSearched }: MenuItemCardProps) => {
             {menu.menuPrice.toLocaleString()} ₩
           </p>
         </div>
-        <button
-          onClick={handleAddToCart}
-          className='mt-auto w-full bg-white hover:bg-indigo-200 font-semibold py-2 px-3 rounded text-sm transition-colors duration-150 ease-in-out'
-        >
-          {language === 'en' ? 'Add to cart' : '담기'}
-        </button>
+
       </div>
     </div>
   );

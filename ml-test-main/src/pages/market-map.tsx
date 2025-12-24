@@ -5,7 +5,6 @@ import { marketShops } from "@/data/market-shops";
 import { useMapStore } from "@/store/mapStore"; // Store Import
 
 export default function MarketMapPage() {
-  // ❌ 기존 useState 제거
   // const [selectedShopId, setSelectedShopId] = useState<string | null>(null);
   // const [showNavigation, setShowNavigation] = useState(false);
 
@@ -31,7 +30,7 @@ export default function MarketMapPage() {
   const currentShop = marketShops.find((s) => s.id === selectedShopId) || null;
 
   return (
-    <main className="grid grid-cols-[1fr_24rem] h-screen w-full bg-[#F5F3F0] overflow-hidden font-sans">
+    <main className="grid grid-cols-[1fr_24rem] h-[calc(100vh-320px)] w-full overflow-hidden font-sans">
       <div className="min-w-0 h-[calc(100vh-320px)] relative overflow-hidden shadow-inner">
         <MapView
           shops={marketShops}
@@ -41,7 +40,7 @@ export default function MarketMapPage() {
         />
       </div>
 
-      <aside className="h-[calc(100vh-310px)] bg-white shadow-2xl z-10 border-l border-[#E5E3E0] overflow-hidden">
+      <aside className="h-[calc(100vh-320px)] bg-white shadow-2xl z-10 border-l border-[#E5E3E0] overflow-hidden">
         <ShopDetailsPanel
           shop={currentShop}
           isNavigating={isNavigationActive} // Store 값 전달
