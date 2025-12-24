@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { useMenuStore } from './menuStore';
 
-type ViewType = 'menu' | 'orderHistory';
+type ViewType = 'menu' | 'orderHistory' | 'map';
 
 interface NavigationState {
   currentCategoryId: number | null;

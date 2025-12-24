@@ -11,8 +11,8 @@ export type Shop = {
   width: number;
   height: number;
 
-  guideX: number;
-  guideY: number;
+  guideX?: number;
+  guideY?: number;
 
   hours?: string;
 
