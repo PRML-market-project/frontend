@@ -16,7 +16,7 @@ const Voice = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedText, setCapturedText] = useState('');
 
-  // ✅ UI 제어용(배포에서 listening stuck 방지)
+  // UI 제어용
   const [isMicOn, setIsMicOn] = useState(false);
 
   // 침묵 감지용 Ref
@@ -24,6 +24,9 @@ const Voice = () => {
 
   // 중복 전송 방지용 Ref
   const isSendingRef = useRef(false);
+
+  // ✅ 최신 텍스트를 항상 ref에 저장 (stop 시점에 state가 늦어도 전송 가능)
+  const latestTextRef = useRef<string>('');
 
   const { adminId, kioskId } = useParams();
   const { language } = useLanguageStore();
@@ -39,8 +42,20 @@ const Voice = () => {
 
   const { sendTextToApi } = useGpt({ apiUrl });
 
-  // ✅ 공통 종료(수동/자동/언마운트) - listening stuck 방지 위해 abort + stop 같이
-  const stopAll = useCallback(() => {
+  // ✅ 소프트 stop: 최종 transcript 확정 이벤트가 오도록 stop만
+  const stopSoft = useCallback(() => {
+    try {
+      SpeechRecognition.stopListening();
+    } catch {
+      // ignore
+    }
+    setIsMicOn(false);
+    setIsCapturing(false);
+    setIsProcessing(false);
+  }, [setIsCapturing]);
+
+  // ✅ 하드 stop: 꼬였을 때만 abort+stop
+  const stopHard = useCallback(() => {
     try {
       SpeechRecognition.abortListening();
       SpeechRecognition.stopListening();
@@ -52,46 +67,56 @@ const Voice = () => {
     setIsProcessing(false);
   }, [setIsCapturing]);
 
-  // 🎤 마이크 버튼 핸들러 (핫워드 없이 즉시 시작/중지)
+  // 🎤 마이크 버튼 핸들러
   const handleToggleMic = useCallback(async () => {
     try {
-      // 이미 듣고 있거나 캡처 중이라면 중지 + 전송
+      // ====== 수동 종료 ======
       if (isMicOn || listening || isCapturing) {
-        stopAll();
+        // ✅ abort 쓰면 최종 결과가 날아갈 수 있으므로 stop만
+        stopSoft();
 
-        const text = capturedText.trim();
+        // ✅ stop 직후 최종 transcript가 들어오는 환경이 있어 잠깐 대기
+        await new Promise((r) => setTimeout(r, 250));
+
+        const text = (latestTextRef.current || capturedText || transcript || '').trim();
+
         if (text && adminId && kioskId) {
           await sendTextToApi(text, adminId, kioskId);
         }
 
         resetTranscript();
         setCapturedText('');
+        latestTextRef.current = '';
         return;
       }
 
-      // 시작 로직
-      resetTranscript(); // 기존 자막 초기화
-      setIsCapturing(true); // 캡처 상태 시작
-      setIsProcessing(true); // 처리 중 상태
+      // ====== 시작 ======
+      resetTranscript();
+      setIsCapturing(true);
+      setIsProcessing(true);
       setCapturedText('');
+      latestTextRef.current = '';
       lastTextTimeRef.current = Date.now();
-      setIsMicOn(true);
 
-      // 빈 사용자 말풍선 즉시 생성
+      // 빈 사용자 말풍선 생성
       addMessage({
         text: '...',
         isUser: true,
         timestamp: Date.now(),
       });
 
-      // 음성 인식 시작
-      await SpeechRecognition.startListening({
+      // ✅ startListening 성공 이후에만 isMicOn=true
+      SpeechRecognition.startListening({
         continuous: true,
         language: langCode,
+        interimResults: true, // ✅ 배포에서 중간 transcript가 덜 오는 경우 대비
       });
+
+      setIsMicOn(true);
     } catch (e) {
       console.error('Mic toggle failed:', e);
-      stopAll();
+      // 시작 실패 시 하드 정리
+      stopHard();
     }
   }, [
     isMicOn,
@@ -102,14 +127,16 @@ const Voice = () => {
     setIsCapturing,
     addMessage,
     capturedText,
+    transcript,
     adminId,
     kioskId,
     sendTextToApi,
-    stopAll,
+    stopSoft,
+    stopHard,
   ]);
 
   /**
-   * ✅ DEV 모드: 키보드 입력을 WebSpeech 흐름처럼 처리
+   * DEV 모드: 키보드 입력을 WebSpeech 흐름처럼 처리
    */
   const runDevAsIfWebSpeech = useCallback(
     async (fullText: string) => {
@@ -121,6 +148,7 @@ const Voice = () => {
       setIsProcessing(true);
       setIsCapturing(true);
       setCapturedText('');
+      latestTextRef.current = '';
       lastTextTimeRef.current = now;
 
       addMessage({
@@ -131,6 +159,7 @@ const Voice = () => {
 
       updateLastMessage(fullText);
       setCapturedText(fullText);
+      latestTextRef.current = fullText;
       lastTextTimeRef.current = Date.now();
 
       try {
@@ -145,6 +174,7 @@ const Voice = () => {
         setIsProcessing(false);
         resetTranscript();
         setCapturedText('');
+        latestTextRef.current = '';
       }
     },
     [addMessage, updateLastMessage, sendTextToApi, adminId, kioskId, resetTranscript, setIsCapturing]
@@ -152,52 +182,53 @@ const Voice = () => {
 
   // 📝 실시간 음성 감지 및 텍스트 업데이트
   useEffect(() => {
-    if (transcript && isCapturing) {
-      lastTextTimeRef.current = Date.now();
-      const currentText = transcript.trim();
-
-      setCapturedText(currentText);
-      updateLastMessage(currentText);
+    if (isCapturing) {
+      const currentText = (transcript || '').trim();
+      if (currentText) {
+        lastTextTimeRef.current = Date.now();
+        setCapturedText(currentText);
+        latestTextRef.current = currentText; // ✅ ref 갱신
+        updateLastMessage(currentText);
+      }
     }
   }, [transcript, isCapturing, updateLastMessage]);
 
   // 🔇 무음 감지 및 자동 전송
-  // 말하다가 2초간 침묵하면 자동으로 전송
   useEffect(() => {
     if (!isCapturing) return;
 
     const checkInterval = setInterval(() => {
       const now = Date.now();
 
-      // 마지막 입력 후 2초 경과 시 전송 시도
       if (now - lastTextTimeRef.current > 2000) {
-        stopAll(); // abort+stop + 상태 내림
+        // ✅ 자동 종료도 stopSoft로 최종 확정 유도
+        stopSoft();
 
-        const text = capturedText.trim();
+        const text = (latestTextRef.current || capturedText || transcript || '').trim();
+
         if (text && adminId && kioskId) {
           sendTextToApi(text, adminId, kioskId).catch((err) => {
             console.error('Error processing voice input:', err);
           });
         } else {
-          // 아무 말도 안 하고 2초 지나면 그냥 꺼짐
           resetTranscript();
         }
 
-        // 상태 초기화
         resetTranscript();
         setCapturedText('');
+        latestTextRef.current = '';
       }
     }, 100);
 
     return () => clearInterval(checkInterval);
-  }, [isCapturing, capturedText, sendTextToApi, adminId, kioskId, resetTranscript, stopAll]);
+  }, [isCapturing, capturedText, transcript, sendTextToApi, adminId, kioskId, resetTranscript, stopSoft]);
 
-  // 컴포넌트 언마운트 시 리스닝 중단
+  // 언마운트 시 하드 정리(꼬임 방지)
   useEffect(() => {
     return () => {
-      stopAll();
+      stopHard();
     };
-  }, [stopAll]);
+  }, [stopHard]);
 
   return (
     <div className="p-4 h-fit flex flex-row items-end gap-3 justify-end">
