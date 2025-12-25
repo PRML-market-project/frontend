@@ -30,7 +30,7 @@ export default function MarketMapPage() {
   const currentShop = marketShops.find((s) => s.id === selectedShopId) || null;
 
   return (
-    <main className="grid grid-cols-[1fr_24rem] h-[calc(100vh-320px)] w-full overflow-hidden font-sans">
+    <main className="grid grid-cols-[1fr_24rem] h-screen w-full bg-[#F5F3F0] overflow-hidden font-sans">
       <div className="min-w-0 h-[calc(100vh-320px)] relative overflow-hidden shadow-inner">
         <MapView
           shops={marketShops}

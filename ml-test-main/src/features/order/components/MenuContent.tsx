@@ -30,7 +30,7 @@ const MenuContent = () => {
         <p className='text-gray-500 text-lg'>
           {language === 'en'
             ? 'No menus available in this category'
-            : '해당 카테고리에 메뉴가 없습니다'}
+            : '해당 점포에 품목이 없습니다'}
         </p>
       </div>
     );

@@ -14,22 +14,18 @@ const Voice = () => {
   const {
     isCovered,
     setIsCovered,
-    isMicOn,
-    startHotwordDetection,
-    stopHotwordDetection,
-    startMic,
+    // isMicOn, // 핫워드 방식이 아니므로 store의 isMicOn 상태보다 로컬 listening 상태가 더 직관적일 수 있으나, UI 유지를 위해 사용
+    startMic, // store 함수 대신 직접 SpeechRecognition을 제어합니다.
     stopMic
   } = useVoiceStore();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedText, setCapturedText] = useState('');
 
-  // Refs
+  // Refs (핫워드 관련 Ref 제거)
   const lastTextTimeRef = useRef<number>(0);
-  const keywordIndexRef = useRef<number>(-1);
-  const detectedKeywordRef = useRef<string | null>(null);
 
-  // 🔥 [중요] 중복 전송 방지용 Ref 추가
+  // 🔥 [중요] 중복 전송 방지용 Ref
   const isSendingRef = useRef(false);
 
   const { adminId, kioskId } = useParams();
@@ -38,9 +34,7 @@ const Voice = () => {
 
   const [devInput, setDevInput] = useState('');
 
-  const KEYWORDS = language === 'en'
-    ? ['malang', 'hello', 'Malang']
-    : ['말랑아', '빨랑아', '빨랑 와', '말랑한', '빨리 와', '빨리와', '빨랑와', '몰라', '몰랑', '말랑은', '빨랑'];
+  // KEYWORDS 배열 제거됨
 
   const addMessage = useChatStore((state) => state.addMessage);
   const updateLastMessage = useChatStore((state) => state.updateLastMessage);
@@ -49,134 +43,128 @@ const Voice = () => {
 
   const { sendTextToApi } = useGpt({ apiUrl });
 
-  // 마이크 토글 핸들러
+  // 🎤 마이크 버튼 핸들러 (수정됨: 핫워드 없이 즉시 시작/중지)
   const handleToggleMic = useCallback(async () => {
     try {
-      if (isMicOn) {
-        stopMic?.();
-        stopHotwordDetection?.();
+      // 이미 듣고 있거나 캡처 중이라면 중지
+      if (listening || isCapturing) {
+        SpeechRecognition.stopListening();
+        setIsCapturing(false);
+        setIsProcessing(false);
+        // 필요하다면 여기서 즉시 전송 로직을 넣을 수도 있지만,
+        // 보통 말하다 끊으면 아래 무음 감지 로직이나 전송 로직이 처리하도록 둡니다.
         return;
       }
-      await startHotwordDetection?.();
-      await startMic?.({ lang: langCode });
+
+      // 시작 로직
+      resetTranscript();      // 기존 자막 초기화
+      setIsCapturing(true);   // 캡처 상태 시작
+      setIsProcessing(true);  // 처리 중 상태
+      setCapturedText('');
+      lastTextTimeRef.current = Date.now();
+
+      // 빈 사용자 말풍선 즉시 생성
+      addMessage({
+        text: '...', // 혹은 빈 문자열
+        isUser: true,
+        timestamp: Date.now(),
+      });
+
+      // 음성 인식 시작
+      await SpeechRecognition.startListening({
+        continuous: true,
+        language: langCode
+      });
+
     } catch (e) {
-      console.error('Mic/Hotword toggle failed:', e);
+      console.error('Mic toggle failed:', e);
     }
-  }, [isMicOn, langCode, startHotwordDetection, stopHotwordDetection, startMic, stopMic]);
+  }, [listening, isCapturing, langCode, resetTranscript, setIsCapturing, addMessage]);
 
   /**
    * ✅ DEV 모드: 키보드 입력을 WebSpeech 흐름처럼 처리
-   * 🔥 수정사항: setTimeout 제거 + 중복 전송 방지(isSendingRef) 적용
    */
   const runDevAsIfWebSpeech = useCallback(async (fullText: string) => {
-    // 1. 이미 전송 중이면 무시 (중복 방지 핵심)
     if (isSendingRef.current) return;
     isSendingRef.current = true;
 
     const now = Date.now();
 
-    // 2. 상태 설정
     setIsProcessing(true);
     setIsCapturing(true);
     setCapturedText('');
     lastTextTimeRef.current = now;
-    keywordIndexRef.current = 0;
-    detectedKeywordRef.current = 'DEV';
 
-    // 3. 빈 사용자 말풍선 생성 (오른쪽 파란색)
+    // 핫워드 관련 ref 설정 제거됨
+
     addMessage({
       text: '',
       isUser: true,
       timestamp: now,
     });
 
-    // 4. 🔥 [중요] setTimeout 없이 즉시 업데이트!
-    // 이렇게 해야 API가 로딩 말풍선을 만들기 전에 '내 메시지'가 완성됩니다.
     updateLastMessage(fullText);
     setCapturedText(fullText);
     lastTextTimeRef.current = Date.now();
 
-    // 5. API 호출
     try {
       await sendTextToApi(fullText, adminId, kioskId);
     } catch (err) {
       console.error('Error processing DEV input:', err);
     } finally {
-      // 6. 종료 처리 및 락 해제
-      isSendingRef.current = false; // 전송 완료, 락 해제
+      isSendingRef.current = false;
       setIsCapturing(false);
       setIsProcessing(false);
       resetTranscript();
-      keywordIndexRef.current = -1;
-      detectedKeywordRef.current = null;
       setCapturedText('');
     }
   }, [addMessage, updateLastMessage, sendTextToApi, adminId, kioskId, resetTranscript, setIsCapturing]);
 
-  // ... (이하 useEffect 로직은 기존과 동일) ...
-  // 실시간 음성 감지
+
+  // 📝 실시간 음성 감지 및 텍스트 업데이트 (수정됨: 키워드 슬라이싱 로직 제거)
   useEffect(() => {
-    if (transcript) {
+    if (transcript && isCapturing) {
       lastTextTimeRef.current = Date.now();
-      if (isCapturing && keywordIndexRef.current !== -1 && detectedKeywordRef.current) {
-        const textAfterKeyword = transcript
-          .slice(keywordIndexRef.current + detectedKeywordRef.current.length)
-          .trim();
-        setCapturedText(textAfterKeyword);
-        updateLastMessage(textAfterKeyword);
-      }
+
+      // 키워드 잘라내기 없이 전체 transcript 사용
+      const currentText = transcript.trim();
+
+      setCapturedText(currentText);
+      updateLastMessage(currentText);
     }
   }, [transcript, isCapturing, updateLastMessage]);
 
-  // 무음 감지 및 자동 전송
+  // 🔇 무음 감지 및 자동 전송 (기존 유지)
+  // 말하다가 2초간 침묵하면 자동으로 전송
   useEffect(() => {
     if (!isCapturing) return;
+
     const checkInterval = setInterval(() => {
       const now = Date.now();
+      // 마지막 입력 후 2초 경과 시
       if (now - lastTextTimeRef.current > 2000) {
+        SpeechRecognition.stopListening(); // 듣기 중단
         setIsCapturing(false);
         setIsProcessing(false);
+
         if (capturedText) {
           sendTextToApi(capturedText, adminId, kioskId).catch((err) => {
             console.error('Error processing voice input:', err);
           });
+        } else {
+            // 아무 말도 안 하고 2초 지나면 그냥 꺼짐 (빈 말풍선 처리 필요시 로직 추가)
+             resetTranscript();
         }
+
+        // 상태 초기화
         resetTranscript();
-        keywordIndexRef.current = -1;
-        detectedKeywordRef.current = null;
         setCapturedText('');
       }
     }, 100);
     return () => clearInterval(checkInterval);
   }, [isCapturing, capturedText, sendTextToApi, adminId, kioskId, resetTranscript, setIsCapturing]);
 
-  // 키워드 감지
-  useEffect(() => {
-    if (!transcript || isProcessing) return;
-    let foundKeyword: string | null = null;
-    let foundIndex = -1;
-    for (const keyword of KEYWORDS) {
-      const idx = transcript.indexOf(keyword);
-      if (idx !== -1) {
-        foundKeyword = keyword;
-        foundIndex = idx;
-        break;
-      }
-    }
-    if (foundKeyword && keywordIndexRef.current === -1) {
-      setIsProcessing(true);
-      setIsCapturing(true);
-      setCapturedText('');
-      lastTextTimeRef.current = Date.now();
-      keywordIndexRef.current = foundIndex;
-      detectedKeywordRef.current = foundKeyword;
-      addMessage({
-        text: '',
-        isUser: true,
-        timestamp: Date.now(),
-      });
-    }
-  }, [transcript, isProcessing, KEYWORDS, addMessage, setIsCapturing]);
+  // ❌ 키워드 감지 useEffect 삭제됨 ❌
 
   useEffect(() => {
     return () => {
@@ -194,11 +182,11 @@ const Voice = () => {
           onClick={handleToggleMic}
           className={`
             w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition active:scale-95 flex-shrink-0
-            ${isMicOn ? 'bg-red-600 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}
+            ${listening ? 'bg-red-600 text-white animate-pulse' : 'bg-indigo-600 text-white hover:bg-indigo-700'}
           `}
-          title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
+          title={listening ? '마이크 끄기' : '마이크 켜기'}
         >
-          {isMicOn ? '■' : '🎤'}
+          {listening ? '■' : '🎤'}
         </button>
       )}
 
@@ -229,7 +217,6 @@ const Voice = () => {
               />
               <button
                 className="px-3 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700 font-bold whitespace-nowrap"
-                // 🔥 전송 중이면 버튼 비활성화 (선택 사항)
                 disabled={isSendingRef.current}
                 onClick={() => {
                   const text = devInput.trim();
@@ -247,7 +234,7 @@ const Voice = () => {
                <span className="text-xs text-indigo-600 animate-pulse font-bold">인식 중...</span>
             ) : (
                <span className="text-[10px] text-gray-400">
-                 {listening ? 'Listening...' : 'Waiting...'}
+                 {listening ? 'Listening...' : 'Click Mic to Speak'}
                </span>
             )}
           </div>
@@ -259,7 +246,8 @@ const Voice = () => {
           className="fixed top-0 left-0 w-screen h-screen flex flex-col items-center justify-center bg-white/80 backdrop-blur-md z-50 cursor-pointer"
           onClick={() => {
             setIsCovered(false);
-            return SpeechRecognition.startListening({ continuous: true, language: langCode });
+            // 커버 클릭 시 바로 시작하고 싶다면 아래 주석 해제
+            // handleToggleMic();
           }}
         >
           <p className="text-4xl font-bold text-indigo-600 animate-pulse">터치하여 시작</p>
