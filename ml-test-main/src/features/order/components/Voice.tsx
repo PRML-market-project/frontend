@@ -14,27 +14,23 @@ const Voice = () => {
   const {
     isCovered,
     setIsCovered,
-    // isMicOn, // 핫워드 방식이 아니므로 store의 isMicOn 상태보다 로컬 listening 상태가 더 직관적일 수 있으나, UI 유지를 위해 사용
-    startMic, // store 함수 대신 직접 SpeechRecognition을 제어합니다.
-    stopMic
   } = useVoiceStore();
 
   const [isProcessing, setIsProcessing] = useState(false);
   const [capturedText, setCapturedText] = useState('');
 
-  // Refs (핫워드 관련 Ref 제거)
+  // 침묵 감지용 Ref
   const lastTextTimeRef = useRef<number>(0);
 
-  // 🔥 [중요] 중복 전송 방지용 Ref
+  // 중복 전송 방지용 Ref
   const isSendingRef = useRef(false);
 
   const { adminId, kioskId } = useParams();
   const { language } = useLanguageStore();
   const langCode = language === 'en' ? 'en-US' : 'ko-KR';
 
+  // DEV 모드 입력용 State
   const [devInput, setDevInput] = useState('');
-
-  // KEYWORDS 배열 제거됨
 
   const addMessage = useChatStore((state) => state.addMessage);
   const updateLastMessage = useChatStore((state) => state.updateLastMessage);
@@ -43,7 +39,7 @@ const Voice = () => {
 
   const { sendTextToApi } = useGpt({ apiUrl });
 
-  // 🎤 마이크 버튼 핸들러 (수정됨: 핫워드 없이 즉시 시작/중지)
+  // 🎤 마이크 버튼 핸들러 (핫워드 없이 즉시 시작/중지)
   const handleToggleMic = useCallback(async () => {
     try {
       // 이미 듣고 있거나 캡처 중이라면 중지
@@ -51,8 +47,6 @@ const Voice = () => {
         SpeechRecognition.stopListening();
         setIsCapturing(false);
         setIsProcessing(false);
-        // 필요하다면 여기서 즉시 전송 로직을 넣을 수도 있지만,
-        // 보통 말하다 끊으면 아래 무음 감지 로직이나 전송 로직이 처리하도록 둡니다.
         return;
       }
 
@@ -65,7 +59,7 @@ const Voice = () => {
 
       // 빈 사용자 말풍선 즉시 생성
       addMessage({
-        text: '...', // 혹은 빈 문자열
+        text: '...',
         isUser: true,
         timestamp: Date.now(),
       });
@@ -95,8 +89,6 @@ const Voice = () => {
     setCapturedText('');
     lastTextTimeRef.current = now;
 
-    // 핫워드 관련 ref 설정 제거됨
-
     addMessage({
       text: '',
       isUser: true,
@@ -108,7 +100,9 @@ const Voice = () => {
     lastTextTimeRef.current = Date.now();
 
     try {
-      await sendTextToApi(fullText, adminId, kioskId);
+      if (adminId && kioskId) {
+        await sendTextToApi(fullText, adminId, kioskId);
+      }
     } catch (err) {
       console.error('Error processing DEV input:', err);
     } finally {
@@ -120,13 +114,10 @@ const Voice = () => {
     }
   }, [addMessage, updateLastMessage, sendTextToApi, adminId, kioskId, resetTranscript, setIsCapturing]);
 
-
-  // 📝 실시간 음성 감지 및 텍스트 업데이트 (수정됨: 키워드 슬라이싱 로직 제거)
+  // 📝 실시간 음성 감지 및 텍스트 업데이트
   useEffect(() => {
     if (transcript && isCapturing) {
       lastTextTimeRef.current = Date.now();
-
-      // 키워드 잘라내기 없이 전체 transcript 사용
       const currentText = transcript.trim();
 
       setCapturedText(currentText);
@@ -134,26 +125,26 @@ const Voice = () => {
     }
   }, [transcript, isCapturing, updateLastMessage]);
 
-  // 🔇 무음 감지 및 자동 전송 (기존 유지)
+  // 🔇 무음 감지 및 자동 전송
   // 말하다가 2초간 침묵하면 자동으로 전송
   useEffect(() => {
     if (!isCapturing) return;
 
     const checkInterval = setInterval(() => {
       const now = Date.now();
-      // 마지막 입력 후 2초 경과 시
+      // 마지막 입력 후 2초 경과 시 전송 시도
       if (now - lastTextTimeRef.current > 2000) {
         SpeechRecognition.stopListening(); // 듣기 중단
         setIsCapturing(false);
         setIsProcessing(false);
 
-        if (capturedText) {
+        if (capturedText && adminId && kioskId) {
           sendTextToApi(capturedText, adminId, kioskId).catch((err) => {
             console.error('Error processing voice input:', err);
           });
         } else {
-            // 아무 말도 안 하고 2초 지나면 그냥 꺼짐 (빈 말풍선 처리 필요시 로직 추가)
-             resetTranscript();
+          // 아무 말도 안 하고 2초 지나면 그냥 꺼짐
+          resetTranscript();
         }
 
         // 상태 초기화
@@ -161,11 +152,11 @@ const Voice = () => {
         setCapturedText('');
       }
     }, 100);
+
     return () => clearInterval(checkInterval);
   }, [isCapturing, capturedText, sendTextToApi, adminId, kioskId, resetTranscript, setIsCapturing]);
 
-  // ❌ 키워드 감지 useEffect 삭제됨 ❌
-
+  // 컴포넌트 언마운트 시 리스닝 중단
   useEffect(() => {
     return () => {
       SpeechRecognition.stopListening();
@@ -246,8 +237,6 @@ const Voice = () => {
           className="fixed top-0 left-0 w-screen h-screen flex flex-col items-center justify-center bg-white/80 backdrop-blur-md z-50 cursor-pointer"
           onClick={() => {
             setIsCovered(false);
-            // 커버 클릭 시 바로 시작하고 싶다면 아래 주석 해제
-            // handleToggleMic();
           }}
         >
           <p className="text-4xl font-bold text-indigo-600 animate-pulse">터치하여 시작</p>
