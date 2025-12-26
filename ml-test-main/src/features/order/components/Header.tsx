@@ -60,7 +60,7 @@ const Header = () => {
               filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.15))',
             }}
           >
-            ML
+            DM
           </span>
         </div>
         <h1 className='text-xl font-extrabold text-indigo-900 tracking-tight whitespace-nowrap'>
