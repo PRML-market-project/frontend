@@ -72,7 +72,7 @@ const StoreEntry = () => {
       {/* Left Section */}
       <div className='w-full md:w-1/2 flex flex-col justify-center items-center px-10 space-y-6 bg-stone-50'>
         <h1 className='text-5xl font-bold text-indigo-600 mb-8'>
-          Mallang Order
+          Daejo Market
         </h1>
 
         <form onSubmit={handleSubmit} className='w-full max-w-sm space-y-5'>
