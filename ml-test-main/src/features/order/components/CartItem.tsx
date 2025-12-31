@@ -38,10 +38,15 @@ const CartItem = ({ item }: CartItemProps) => {
   return (
     <div className='flex flex-col items-center bg-white rounded-lg p-2 border border-[var(--color-indigo-100)] shadow-sm h-full'>
       {/* Image */}
+      {/* 변경사항: 
+        1. object-cover: 이미지를 찌그러뜨리지 않고 영역을 꽉 채움 (넘치는 부분 잘림)
+        2. object-center: 이미지가 잘릴 때 중앙을 기준으로 정렬
+        3. aspect-square: 정사각형 비율 강제 (w-16 h-16이 있어서 필수는 아니지만 명시적 선언)
+      */}
       <img
         src={item.menu.imageUrl}
         alt={translatedName}
-        className='w-16 h-16 object-cover rounded mb-2 flex-shrink-0'
+        className='w-16 h-16 aspect-square object-cover object-center rounded mb-2 flex-shrink-0'
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.src = '/logo.png';
