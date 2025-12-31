@@ -1,7 +1,6 @@
 import React from "react";
 import { Shop } from "@/types/shop";
 
-
 interface ShopDetailsPanelProps {
   shop: Shop | null;
   isNavigating: boolean;
@@ -16,9 +15,11 @@ export function ShopDetailsPanel({
   if (!shop) {
     return (
       <div className="h-full flex flex-col items-center justify-center p-12 text-center">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+        {/* [변경] 아이콘 배경: gray-100 -> muted (은은한 베이지) */}
+        <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+          {/* [변경] 아이콘 색상: gray-400 -> muted-foreground (따뜻한 회색) */}
           <svg
-            className="w-8 h-8 text-gray-400"
+            className="w-8 h-8 text-muted-foreground"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -31,7 +32,8 @@ export function ShopDetailsPanel({
             />
           </svg>
         </div>
-        <p className="text-gray-500">
+        {/* [변경] 안내 문구: gray-500 -> muted-foreground */}
+        <p className="text-muted-foreground">
           상점을 선택하여 정보를 확인하고
           <br />
           길안내를 받아보세요.
@@ -41,15 +43,18 @@ export function ShopDetailsPanel({
   }
 
   return (
-    <div className="h-full flex flex-col p-10 overflow-y-auto">
+    <div className="h-full flex flex-col p-10 overflow-y-auto bg-card">
       <div className="mb-8">
-        <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full mb-3 uppercase tracking-wider">
+        {/* [변경] 뱃지: blue 계열 -> secondary (연한 베이지 배경 + 진한 텍스트) */}
+        <span className="inline-block px-3 py-1 bg-secondary text-secondary-foreground text-xs font-bold rounded-full mb-3 uppercase tracking-wider border border-border">
           점포 {shop.number}
         </span>
-        <h2 className="text-3xl font-black text-gray-800 leading-tight">
+        {/* [변경] 제목: gray-800 -> foreground (진한 브라운/그레이) */}
+        <h2 className="text-3xl font-black text-foreground leading-tight">
           {shop.name}
         </h2>
-        <p className="text-lg text-gray-500 mt-2 font-medium">
+        {/* [변경] 카테고리: gray-500 -> muted-foreground */}
+        <p className="text-lg text-muted-foreground mt-2 font-medium">
           {shop.category}
         </p>
       </div>
@@ -59,8 +64,10 @@ export function ShopDetailsPanel({
           onClick={onStartNavigation}
           className={`w-full py-5 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-lg ${
             isNavigating
-              ? "bg-red-50 text-red-600 border-2 border-red-200"
-              : "bg-blue-600 text-white hover:bg-blue-700 active:scale-95"
+              ? // [변경] 안내 중 (Red): destructive 사용 (파스텔톤 붉은색)
+                "bg-destructive/10 text-destructive border-2 border-destructive/30"
+              : // [변경] 안내 시작 (Blue): primary 사용 (샌드 골드)
+                "bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95"
           }`}
         >
           <svg
@@ -88,20 +95,24 @@ export function ShopDetailsPanel({
           {isNavigating ? "안내 종료" : "여기까지 길안내"}
         </button>
 
-        <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-          <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-widest">
+        {/* [변경] 정보 박스 1: gray-50 -> muted/30 (아주 연한 배경) + border */}
+        <div className="bg-muted/30 rounded-2xl p-6 border border-border">
+          {/* [변경] 라벨: gray-400 -> muted-foreground */}
+          <h4 className="text-xs font-bold text-muted-foreground uppercase mb-3 tracking-widest">
             상세 위치
           </h4>
-          <p className="text-gray-700 font-semibold">
+          {/* [변경] 내용: gray-700 -> foreground */}
+          <p className="text-foreground font-semibold">
             {shop.section}
           </p>
         </div>
 
-        <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
-          <h4 className="text-xs font-bold text-gray-400 uppercase mb-3 tracking-widest">
+        {/* [변경] 정보 박스 2 */}
+        <div className="bg-muted/30 rounded-2xl p-6 border border-border">
+          <h4 className="text-xs font-bold text-muted-foreground uppercase mb-3 tracking-widest">
             운영 정보
           </h4>
-          <p className="text-gray-700 font-semibold leading-relaxed">
+          <p className="text-foreground font-semibold leading-relaxed">
             {shop.hours || "오전 08:00 - 오후 07:00"}
           </p>
         </div>

@@ -61,10 +61,10 @@ const ChatHistory = () => {
   return (
     <div className="flex flex-col h-full relative">
       <div
-        className="flex-1 p-4 overflow-y-auto bg-indigo-50 rounded-lg"
+        className="flex-1 p-4 overflow-y-auto bg-[var(--color-indigo-50)] rounded-lg"
         style={{
-          boxShadow: '0 8px 16px rgba(79, 70, 229, 0.3)',
-          border: '1px solid rgba(79, 70, 229, 0.2)',
+          boxShadow: '0 8px 16px var(--color-chat-shadow)',
+          border: '1px solid var(--color-chat-border)',
         }}
       >
         {messages.length === 0 ? (

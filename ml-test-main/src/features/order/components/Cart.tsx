@@ -70,58 +70,59 @@ const Cart = () => {
 
   return (
     <>
-      <aside className='w-65 bg-slate-50 rounded-xl shadow-lg p-6 mt-4 mb-6 mr-6 ml-4 flex flex-col'>
-        {/* Header */}
-        <div className='mb-3'>
-          <h2 className='text-2xl font-semibold text-gray-800 text-center tracking-wide'>
+      <div className='w-full bg-[var(--color-slate-50)] flex flex-col max-h-[200px]'>
+        {/* Header - 작은 높이 */}
+        <div className='flex items-center justify-between px-4 py-2 border-b border-[var(--color-indigo-100)]'>
+          <h2 className='text-lg font-semibold text-[var(--color-gray-800)] tracking-wide'>
             {t.cartTitle}
           </h2>
-        </div>
-
-        {/* 카트 리스트 */}
-        <div className='flex-1 overflow-y-auto pr-1'>
-          {cartItems.length === 0 ? (
-            <div className='flex flex-col items-center justify-center mt-16 text-slate-400 select-none'>
-              <img
-                src='/basket.png'
-                alt='empty cart'
-                className='w-12 h-12 mb-4'
-              />
-              <p className='text-center text-slate-600 text-base font-medium'>
-                {t.emptyMessage}
-              </p>
-              <p className='text-sm text-slate-400 mt-1'>{t.guideMessage}</p>
-            </div>
-          ) : (
-            cartItems.map((item, idx) => (
-              <CartItem key={item.menu.menuId} item={item} />
-            ))
+          {cartItems.length > 0 && (
+            <span className='text-base font-bold text-[var(--color-indigo-600)]'>
+              {totalPrice.toLocaleString()} ₩
+            </span>
           )}
         </div>
 
-        {/* Footer */}
-        {cartItems.length > 0 && (
-          <div className='pt-4 mt-4 bg-slate-50 border-t border-indigo-100'>
-            <div className='flex justify-between items-center mb-4'>
-              <span className='text-base font-medium text-slate-700'>
-                {t.totalLabel}
-              </span>
-              <span className='text-2xl font-bold bg-gradient-to-r from-indigo-400 to-indigo-600 bg-clip-text text-transparent'>
-                {totalPrice.toLocaleString()} ₩
-              </span>
+        {/* 카트 리스트 - 가로 스크롤 */}
+        <div className='flex-1 overflow-x-auto overflow-y-hidden px-2 py-2'>
+          {cartItems.length === 0 ? (
+            <div className='flex items-center justify-center h-full text-[var(--color-slate-400)] select-none'>
+              <div className='flex flex-col items-center gap-1'>
+                <img
+                  src='/basket.png'
+                  alt='empty cart'
+                  className='w-8 h-8 opacity-50'
+                />
+                <p className='text-xs text-center text-[var(--color-slate-500)]'>
+                  {t.emptyMessage}
+                </p>
+              </div>
             </div>
+          ) : (
+            <div className='flex gap-2 min-w-max'>
+              {cartItems.map((item, idx) => (
+                <div key={item.menu.menuId} className='flex-shrink-0 w-32'>
+                  <CartItem item={item} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
+        {/* 주문 버튼 - 하단 고정 */}
+        {cartItems.length > 0 && (
+          <div className='px-4 py-2 border-t border-[var(--color-indigo-100)] bg-background'>
             <button
               onClick={handlePlaceOrder}
-              className='w-full bg-gradient-to-r from-indigo-500 to-indigo-700 hover:from-indigo-600 hover:to-indigo-800
-                         text-white font-semibold py-4 rounded-xl shadow-md transition duration-300 ease-in-out
-                         focus:outline-none focus:ring-4 focus:ring-indigo-300'
+              className='w-full bg-gradient-to-r from-[var(--color-indigo-500)] to-[var(--color-indigo-700)] hover:from-[var(--color-indigo-600)] hover:to-[var(--color-indigo-800)]
+                         text-white font-semibold py-2.5 rounded-lg shadow-md transition duration-300 ease-in-out
+                         focus:outline-none focus:ring-2 focus:ring-[var(--color-indigo-300)]'
             >
               {t.orderButton}
             </button>
           </div>
         )}
-      </aside>
+      </div>
 
       <OrderConfirmationModal />
     </>

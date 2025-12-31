@@ -31,7 +31,7 @@ const OrderHistoryPage: React.FC = () => {
   }, 0);
 
   return (
-    <div className='h-full flex flex-col bg-gray-50'>
+    <div className='h-full flex flex-col bg-[var(--color-gray-50)]'>
       <div className='p-4'>
         <h1 className='text-2xl font-bold mb-6'>
           {language === 'en' ? 'Order History' : '주문 내역'}
@@ -44,7 +44,7 @@ const OrderHistoryPage: React.FC = () => {
               : '주문 내역을 불러오는 중...'}
           </p>
         )}
-        {error && <p className='text-red-600'>{error}</p>}
+        {error && <p className='text-[var(--color-red-600)]'>{error}</p>}
       </div>
 
       <div className='flex flex-col gap-4 flex-1 overflow-y-auto px-4 pb-4'>
@@ -63,7 +63,7 @@ const OrderHistoryPage: React.FC = () => {
                     {language === 'en' ? 'Order Number' : '주문번호'}:{' '}
                     {order.orderId}
                   </h2>
-                  <p className='text-sm text-gray-500'>
+                  <p className='text-sm text-[var(--color-gray-500)]'>
                     {formatDate(order.createdAt)}
                   </p>
                 </div>
@@ -104,12 +104,12 @@ const OrderHistoryPage: React.FC = () => {
 
       {/* 전체 주문 총합 금액 - 하단 고정 */}
       {orders.length > 0 && (
-        <div className='bg-white border-t border-gray-200 p-4'>
+        <div className='bg-white border-t border-[var(--color-gray-200)] p-4'>
           <div className='flex justify-between items-center'>
             <span className='text-lg font-semibold'>
               {language === 'en' ? 'Final Amount' : '최종 금액'}
             </span>
-            <span className='text-2xl font-bold text-indigo-600'>
+            <span className='text-2xl font-bold text-[var(--color-indigo-600)]'>
               {totalAmount.toLocaleString()} ₩
             </span>
           </div>

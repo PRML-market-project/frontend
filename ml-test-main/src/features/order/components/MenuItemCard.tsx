@@ -1,4 +1,3 @@
-//MenuItemCard
 import { Menu } from '@/types/menu';
 import { useCartStore } from '@/store/cartStore';
 import { useLanguageStore } from '@/store/languageStore';
@@ -20,43 +19,43 @@ const MenuItemCard = ({ menu, isSearched }: MenuItemCardProps) => {
     addItem(menu);
   };
 
-  console.log('language:', language, 'menu.menuNameEn:', menu.menuNameEn);
-  // 상세 상태 콘솔 로그
-  console.log('MenuItemCard Rendered');
-  console.log('language:', language);
-  console.log('menu:', menu);
-  console.log('menu.menuNameEn:', menu.menuNameEn);
-  console.log('translatedName:', translatedName);
-
   return (
     <div
-      className={`bg-indigo-100 rounded-lg shadow hover:shadow-md transition-shadow duration-200 ease-in-out overflow-hidden flex flex-col p-4 gap-4 items-center ${
+      onClick={handleAddToCart} // 카드 전체 클릭 시 장바구니 담기 (UX 개선 추천)
+      className={`bg-[var(--color-indigo-100)] rounded-lg shadow hover:shadow-md transition-shadow duration-200 ease-in-out overflow-hidden flex flex-col cursor-pointer ${
         isSearched
-          ? 'animate-[pulse_1s_ease-in-out_5] border-2 border-indigo-300 ring-2 ring-indigo-300'
+          ? 'animate-[pulse_1s_ease-in-out_5] border-2 border-[var(--color-indigo-300)] ring-2 ring-[var(--color-indigo-300)]'
           : ''
       }`}
     >
-      <img
-        src={menu.imageUrl}
-        alt={translatedName}
-        className='w-[80%] aspect-square object-cover'
-        onError={(e) => {
-          (e.target as HTMLImageElement).src = '/logo.png';
-        }}
-      />
-      <div className='flex flex-col flex-grow w-full'>
+      {/* 이미지 영역 */}
+      <div className="w-full aspect-square bg-white flex items-center justify-center overflow-hidden">
+        <img
+          src={menu.imageUrl}
+          alt={translatedName}
+          // [핵심 변경사항]
+          // aspect-square: 너비에 맞춰 높이를 1:1 비율로 자동 설정
+          // object-contain: 이미지가 잘리지 않고 비율을 유지하며 전체가 다 보이도록 설정
+          className='w-full h-full object-contain'
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/logo.png';
+          }}
+        />
+      </div>
+      
+      {/* 텍스트 영역 */}
+      <div className='flex flex-col flex-grow w-full p-4'>
         <div className='flex-grow mb-3'>
           <h3
-            className='font-semibold text-md mb-1 truncate text-center text-indigo-900'
+            className='font-semibold text-md mb-1 truncate text-center text-[var(--color-indigo-900)]'
             title={translatedName}
           >
             {translatedName}
           </h3>
-          <p className='text-sm text-indigo-700 text-center'>
+          <p className='text-sm text-[var(--color-indigo-700)] text-center'>
             {menu.menuPrice.toLocaleString()} ₩
           </p>
         </div>
-
       </div>
     </div>
   );

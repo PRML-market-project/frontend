@@ -231,15 +231,15 @@ const Voice = () => {
   }, [stopHard]);
 
   return (
-    <div className="p-4 h-fit flex flex-row items-end gap-3 justify-end">
+    <div className="h-full flex flex-col items-center justify-center gap-2 p-2">
       {/* 1. 마이크 버튼 */}
       {!isCovered && (
         <button
           type="button"
           onClick={handleToggleMic}
           className={`
-            w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition active:scale-95 flex-shrink-0
-            ${isMicOn ? 'bg-red-600 text-white animate-pulse' : 'bg-indigo-600 text-white hover:bg-indigo-700'}
+            w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition active:scale-95 flex-shrink-0
+            ${isMicOn ? 'bg-[var(--color-red-600)] text-white animate-pulse' : 'bg-[var(--color-indigo-600)] text-white hover:bg-[var(--color-indigo-700)]'}
           `}
           title={isMicOn ? '마이크 끄기' : '마이크 켜기'}
         >
@@ -249,12 +249,12 @@ const Voice = () => {
 
       {/* 2. DEV 전용 키보드 입력 UI */}
       {import.meta.env.DEV && (
-        <div className="w-[300px] flex-shrink-0">
-          <div className="p-2 rounded-lg border border-indigo-200 bg-white text-left shadow-sm">
-            <div className="text-[10px] text-indigo-700 mb-1 font-semibold">Developer Input</div>
+        <div className="w-full max-w-[200px] flex-shrink-0">
+          <div className="p-2 rounded-lg border border-[var(--color-indigo-200)] bg-white text-left shadow-sm">
+            <div className="text-[10px] text-[var(--color-indigo-700)] mb-1 font-semibold">Developer Input</div>
             <div className="flex gap-2">
               <textarea
-                className="flex-1 p-2 border rounded-md text-sm resize-none focus:outline-indigo-500 bg-indigo-50"
+                className="flex-1 p-2 border rounded-md text-sm resize-none focus:outline-[var(--color-indigo-500)] bg-[var(--color-indigo-50)]"
                 rows={1}
                 placeholder="입력..."
                 value={devInput}
@@ -271,7 +271,7 @@ const Voice = () => {
                 }}
               />
               <button
-                className="px-3 rounded-md bg-indigo-600 text-white text-sm hover:bg-indigo-700 font-bold whitespace-nowrap"
+                className="px-3 rounded-md bg-[var(--color-indigo-600)] text-white text-sm hover:bg-[var(--color-indigo-700)] font-bold whitespace-nowrap"
                 disabled={isSendingRef.current}
                 onClick={() => {
                   const text = devInput.trim();
@@ -286,9 +286,9 @@ const Voice = () => {
           </div>
           <div className="mt-1 text-center">
             {isCapturing ? (
-              <span className="text-xs text-indigo-600 animate-pulse font-bold">인식 중...</span>
+              <span className="text-xs text-[var(--color-indigo-600)] animate-pulse font-bold">인식 중...</span>
             ) : (
-              <span className="text-[10px] text-gray-400">{isMicOn ? 'Listening...' : 'Click Mic to Speak'}</span>
+              <span className="text-[10px] text-[var(--color-gray-400)]">{isMicOn ? 'Listening...' : 'Click Mic to Speak'}</span>
             )}
           </div>
         </div>
@@ -301,7 +301,7 @@ const Voice = () => {
             setIsCovered(false);
           }}
         >
-          <p className="text-4xl font-bold text-indigo-600 animate-pulse">터치하여 시작</p>
+          <p className="text-4xl font-bold text-[var(--color-indigo-600)] animate-pulse">터치하여 시작</p>
         </div>
       )}
     </div>

@@ -184,7 +184,7 @@ const KeywordDetector = () => {
         <div className='flex items-center space-x-2'>
           <div
             className={`w-3 h-3 rounded-full ${
-              isListening ? 'bg-green-500' : 'bg-red-500'
+              isListening ? 'bg-[var(--color-green-500)]' : 'bg-[var(--color-red-500)]'
             }`}
           />
           <span className='text-sm font-medium'>
@@ -192,12 +192,12 @@ const KeywordDetector = () => {
           </span>
         </div>
         {showDetection && (
-          <div className='mt-2 p-2 bg-blue-100 text-blue-800 rounded text-sm'>
+          <div className='mt-2 p-2 bg-[var(--color-blue-100)] text-[var(--color-blue-800)] rounded text-sm'>
             키워드 감지됨!
           </div>
         )}
         {error && (
-          <div className='mt-2 p-2 bg-red-100 text-red-800 rounded text-sm'>
+          <div className='mt-2 p-2 bg-[var(--color-red-100)] text-[var(--color-red-800)] rounded text-sm'>
             {error.message}
           </div>
         )}

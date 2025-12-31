@@ -33,56 +33,52 @@ const CategoryList = () => {
   };
 
   return (
-    <div className='flex'>
-      <aside className='bg-slate-800 rounded-xl shadow-lg p-4 mt-4 mb-6 ml-4 w-40 flex flex-col select-none'>
-        {/* 카테고리 목록 */}
-        <nav className='flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-indigo-400 scrollbar-track-indigo-900/30'>
-          <ul className='flex flex-col gap-2'>
-            {filteredCategories.map((category) => {
-              const isActive =
-                !isNaN(currentCategoryId) &&
-                currentView === 'menu' &&
-                category.categoryId === currentCategoryId;
+    <div className='w-full bg-background/95 backdrop-blur-sm border-b border-border'>
+      <div className='flex items-center gap-2 px-2 py-2 overflow-x-auto scrollbar-thin scrollbar-thumb-[var(--color-indigo-400)] scrollbar-track-transparent'>
+        {/* 카테고리 탭들 - 가로 스크롤 */}
+        <nav className='flex items-center gap-2 min-w-full'>
+          {filteredCategories.map((category) => {
+            const isActive =
+              !isNaN(currentCategoryId) &&
+              currentView === 'menu' &&
+              category.categoryId === currentCategoryId;
 
-              // 언어에 따라 이름 선택
-              const categoryName =
-                language === 'en'
-                  ? category.categoryNameEn
-                  : category.categoryName;
+            // 언어에 따라 이름 선택
+            const categoryName =
+              language === 'en'
+                ? category.categoryNameEn
+                : category.categoryName;
 
-              return (
-                <li key={category.categoryId}>
-                  <button
-                    onClick={() => handleCategoryClick(category.categoryId)}
-                    className={clsx(
-                      'w-full py-3 rounded-lg text-center transition-colors duration-300 ease-in-out text-sm font-semibold',
-                      isActive
-                        ? 'bg-indigo-100 text-indigo-900 shadow-lg underline decoration-indigo-600 decoration-2 underline-offset-4'
-                        : 'text-indigo-200 hover:bg-indigo-200 hover:text-indigo-800'
-                    )}
-                  >
-                    {categoryName}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        {/* 주문내역조회 버튼 */}
-        <div className='w-full mt-6'>
+            return (
+              <button
+                key={category.categoryId}
+                onClick={() => handleCategoryClick(category.categoryId)}
+                className={clsx(
+                  'px-4 py-2 rounded-lg text-center transition-all duration-200 ease-in-out text-sm font-semibold whitespace-nowrap flex-shrink-0',
+                  isActive
+                    ? 'bg-[var(--color-indigo-100)] text-[var(--color-indigo-900)] shadow-md border-2 border-[var(--color-indigo-300)]'
+                    : 'bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground border border-border'
+                )}
+              >
+                {categoryName}
+              </button>
+            );
+          })}
+          
+          {/* 지도 버튼 - 탭 형태로 추가 */}
           <button
             onClick={handleOrderHistoryClick}
             className={clsx(
-              'w-full font-semibold py-3 rounded-md text-sm bg-indigo-100 text-indigo-900 transition duration-200 ease-in-out hover:brightness-90 shadow-sm',
-              currentView === 'orderHistory' &&
-                'shadow-inner ring-2 ring-indigo-500'
+              'px-4 py-2 rounded-lg text-center transition-all duration-200 ease-in-out text-sm font-semibold whitespace-nowrap flex-shrink-0 ml-auto',
+              currentView === 'orderHistory'
+                ? 'bg-[var(--color-indigo-100)] text-[var(--color-indigo-900)] shadow-md border-2 border-[var(--color-indigo-300)]'
+                : 'bg-secondary text-foreground hover:bg-accent hover:text-accent-foreground border border-border'
             )}
           >
-            {language === 'en' ? 'map' : '지도'}
+            {language === 'en' ? '🗺️ Map' : '🗺️ 지도'}
           </button>
-        </div>
-      </aside>
+        </nav>
+      </div>
     </div>
   );
 };

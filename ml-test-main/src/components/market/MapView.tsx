@@ -80,7 +80,7 @@ export function MapView({
       2. overflow-x-auto: 가로 스크롤 허용
       3. overflow-y-hidden: 세로 스크롤 방지
     */
-    <div className="h-full overflow-x-auto overflow-y-hidden bg-[#FAFAF9]">
+    <div className="h-full overflow-x-auto overflow-y-hidden bg-[var(--color-map-bg)]">
       <svg
         viewBox="0 0 3600 1200"
         /* 핵심 수정 사항:
@@ -94,20 +94,20 @@ export function MapView({
         // CSS로 크기를 강제했으므로 xMinYMid meet을 유지해도 꽉 차게 나옵니다.
         preserveAspectRatio="xMinYMid meet"
       >
-        <rect x="0" y="0" width="3600" height="1200" fill="#FAFAF9" />
+        <rect x="0" y="0" width="3600" height="1200" fill="var(--color-map-bg)" />
 
         <rect
           x="50"
           y="50"
           width="3500"
           height="1100"
-          fill="#FAFAF9"
-          stroke="#D4D1CC"
+          fill="var(--color-map-bg)"
+          stroke="var(--color-map-border-light)"
           strokeWidth="1"
           rx="8"
         />
 
-        <g fill="#FFFFFF" stroke="#E5E3E0">
+        <g fill="var(--color-map-white)" stroke="var(--color-map-border)">
           <rect x="270" y="50" width="30" height="1100" />
           <rect x="270" y="820" width="3280" height="40" />
         </g>
@@ -127,8 +127,8 @@ export function MapView({
                   width={shop.width}
                   height={shop.height}
                   rx="2"
-                  fill={isSelected ? "#3B82F6" : "#FFFFFF"}
-                  stroke={isSelected ? "#2563EB" : "#D1D5DB"}
+                  fill={isSelected ? "var(--color-map-shop-selected)" : "var(--color-map-white)"}
+                  stroke={isSelected ? "var(--color-map-shop-selected-stroke)" : "var(--color-map-shop-stroke)"}
                   strokeWidth={isSelected ? "2" : "1"}
                   className="transition-colors duration-200"
                 />
@@ -137,7 +137,7 @@ export function MapView({
                   y={shop.y + shop.height / 2}
                   textAnchor="middle"
                   dominantBaseline="middle"
-                  fill={isSelected ? "white" : "#6B7280"}
+                  fill={isSelected ? "white" : "var(--color-map-text-gray)"}
                   className="select-none text-[12px]"
                 >
                   {shop.number}
@@ -152,7 +152,7 @@ export function MapView({
             <path
               d={getPathData()}
               fill="none"
-              stroke="#3B82F6"
+              stroke="var(--color-map-shop-selected)"
               strokeWidth="8"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -171,14 +171,14 @@ export function MapView({
               cx={selectedShop.guideX}
               cy={selectedShop.guideY}
               r="12"
-              fill="#EF4444"
+              fill="var(--color-map-destination)"
               className="animate-pulse"
             />
           </g>
         )}
 
         <g transform={`translate(${KIOSK.x}, ${KIOSK.y})`}>
-          <rect width="50" height="50" rx="4" fill="#1F2937" />
+          <rect width="50" height="50" rx="4" fill="var(--color-map-current-location)" />
           <text
             x="25"
             y="30"

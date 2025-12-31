@@ -36,46 +36,46 @@ const CartItem = ({ item }: CartItemProps) => {
   const translatedCurrency = language === 'en' ? '₩' : '₩';
 
   return (
-    <div className='flex items-center py-2 border-b border-indigo-100 last:border-b-0 mb-1 last:mb-0'>
-      {/* Left: Image */}
+    <div className='flex flex-col items-center bg-white rounded-lg p-2 border border-[var(--color-indigo-100)] shadow-sm h-full'>
+      {/* Image */}
       <img
         src={item.menu.imageUrl}
         alt={translatedName}
-        className='w-12 h-12 object-cover rounded mr-3 flex-shrink-0'
+        className='w-16 h-16 object-cover rounded mb-2 flex-shrink-0'
         onError={(e) => {
           const target = e.target as HTMLImageElement;
           target.src = '/logo.png';
         }}
       />
 
-      {/* Middle: Name and Price */}
-      <div className='flex-grow mr-3 min-w-0'>
-        <p className='font-semibold text-sm mb-1 text-slate-800 whitespace-nowrap'>
-          {translatedName}
-        </p>
-        <p className='text-xs text-slate-600 whitespace-nowrap'>
-          {item.menu.menuPrice.toLocaleString()} {translatedCurrency}
-        </p>
-      </div>
+      {/* Name - 짧게 표시 */}
+      <p className='font-semibold text-xs mb-1 text-[var(--color-slate-800)] text-center line-clamp-2 h-8'>
+        {translatedName}
+      </p>
 
-      {/* Right: Quantity Controls */}
-      <div className='flex items-center flex-shrink-0 space-x-1'>
+      {/* Price */}
+      <p className='text-xs text-[var(--color-slate-600)] mb-2'>
+        {item.menu.menuPrice.toLocaleString()} {translatedCurrency}
+      </p>
+
+      {/* Quantity Controls */}
+      <div className='flex items-center justify-center gap-2 mt-auto'>
         <button
           onClick={handleDecrease}
-          className='w-6 h-6 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors'
+          className='w-6 h-6 flex items-center justify-center rounded-full hover:bg-[var(--color-indigo-100)] transition-colors'
           aria-label='Decrease quantity'
         >
-          <MinusIcon className='w-3.5 h-3.5 text-indigo-500' />
+          <MinusIcon className='w-3.5 h-3.5 text-[var(--color-indigo-500)]' />
         </button>
-        <span className='text-center font-medium text-sm w-5 text-slate-700'>
+        <span className='text-center font-medium text-sm w-6 text-[var(--color-slate-700)]'>
           {item.quantity}
         </span>
         <button
           onClick={handleIncrease}
-          className='w-6 h-6 flex items-center justify-center rounded-full hover:bg-indigo-100 transition-colors'
+          className='w-6 h-6 flex items-center justify-center rounded-full hover:bg-[var(--color-indigo-100)] transition-colors'
           aria-label='Increase quantity'
         >
-          <PlusIcon className='w-3.5 h-3.5 text-indigo-500' />
+          <PlusIcon className='w-3.5 h-3.5 text-[var(--color-indigo-500)]' />
         </button>
       </div>
     </div>

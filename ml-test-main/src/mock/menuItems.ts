@@ -61,7 +61,14 @@ export const mockMenuItems: ResMenu[] = [
     menu_price: 1000,
     menu_img_url: 'https://via.placeholder.com/150/87CEEB/FFFFFF?text=물',
   },
-
+  {
+    menu_id: 11,
+    category_id: 1,
+    menu_name: '테스트',
+    menu_name_en: '테스트',
+    menu_price: 1000,
+    menu_img_url: 'https://via.placeholder.com/150/87CEEB/FFFFFF?text=물',
+  },
   // 주류 (category_id: 2)
   {
     menu_id: 6,

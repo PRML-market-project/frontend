@@ -126,7 +126,7 @@ const VoiceRecorder = ({
       <div className='flex items-center space-x-2'>
         <div
           className={`w-3 h-3 rounded-full ${
-            isRecordingState ? 'bg-red-500 animate-pulse' : 'bg-gray-500'
+            isRecordingState ? 'bg-[var(--color-red-500)] animate-pulse' : 'bg-[var(--color-gray-500)]'
           }`}
         />
         <span className='text-sm font-medium'>
@@ -137,9 +137,9 @@ const VoiceRecorder = ({
       {/* Audio Level Visualization */}
       {isRecordingState && (
         <div className='mt-2 flex items-center space-x-2'>
-          <div className='flex-1 h-2 bg-gray-200 rounded-full overflow-hidden'>
+          <div className='flex-1 h-2 bg-[var(--color-gray-200)] rounded-full overflow-hidden'>
             <div
-              className='h-full bg-blue-500 transition-all duration-100'
+              className='h-full bg-[var(--color-blue-500)] transition-all duration-100'
               style={{
                 width: `${audioLevel * 100}%`,
                 transform: `scaleX(${1 + audioLevel})`,
@@ -155,11 +155,11 @@ const VoiceRecorder = ({
         <div className='mt-2 flex items-center space-x-2'>
           <button
             onClick={playRecording}
-            className='px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm'
+            className='px-3 py-1 bg-[var(--color-blue-500)] text-white rounded hover:bg-[var(--color-blue-600)] text-sm'
           >
             Play Recording
           </button>
-          <span className='text-xs text-gray-500'>
+          <span className='text-xs text-[var(--color-gray-500)]'>
             {Math.round(lastRecording.size / 1024)} KB
           </span>
         </div>

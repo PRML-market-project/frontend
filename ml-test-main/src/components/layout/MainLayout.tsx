@@ -8,34 +8,30 @@ import Header from '@/features/order/components/Header';
 
 const MainLayout = () => {
   return (
-    <div className="flex flex-col w-screen h-screen bg-[url('/background.png')]  overflow-hidden">
-        <Header />
+    <div className="flex flex-col w-screen h-screen bg-[url('/background.png')] overflow-hidden">
+      {/* 헤더 - 상단 고정 */}
+      <Header />
 
-      {/* 본문 영역 */}
-      <div className="flex flex-1 overflow-hidden min-h-0 pt-1">
-        {/* 왼쪽 카테고리 */}
+      {/* 카테고리 - 상단 가로 탭 형태 */}
+      <div className="flex-shrink-0">
         <CategoryList />
+      </div>
 
-        {/* 가운데 콘텐츠 */}
-        <div className="flex flex-col flex-1 min-h-0">
-          {/* Outlet 영역 */}
-          <main className="flex-1 overflow-y-auto bg-[url('/background.png')] min-h-0">
-            <Outlet />
-          </main>
+      {/* 메인 콘텐츠 영역 - 중앙 큰 영역 */}
+      <main className="flex-1 overflow-y-auto bg-[url('/background.png')] min-h-0 px-2">
+        <Outlet />
+      </main>
 
-          {/* 채팅 + 음성 */}
-          <div className="flex h-[20%] p-4 gap-4 min-h-0 ">
-            <div className="flex-1 bg-blue-100 rounded-2xl overflow-y-auto">
-              <ChatHistory />
-            </div>
-            <Voice />
-          </div>
+      {/* 채팅 + 음성 - 하단 고정 */}
+      <div className="flex-shrink-0 flex gap-2 p-2 border-t border-border bg-background/95 backdrop-blur-sm">
+        <div className="flex-1 bg-[var(--color-blue-100)] rounded-xl overflow-hidden min-h-[120px] max-h-[150px]">
+          <ChatHistory />
         </div>
-
-        {/* 오른쪽 장바구니*/}
-          {/*<Cart /> */}
+        <div className="flex-shrink-0">
+          <Voice />
         </div>
       </div>
+    </div>
   );
 };
 

@@ -40,7 +40,7 @@ export default function MarketMapPage() {
         />
       </div>
 
-      <aside className="h-[calc(100vh-320px)] bg-white shadow-2xl z-10 border-l border-[#E5E3E0] overflow-hidden">
+      <aside className="h-[calc(100vh-320px)] bg-white shadow-2xl z-10 border-l border-[var(--color-map-border)] overflow-hidden">
         <ShopDetailsPanel
           shop={currentShop}
           isNavigating={isNavigationActive} // Store 값 전달

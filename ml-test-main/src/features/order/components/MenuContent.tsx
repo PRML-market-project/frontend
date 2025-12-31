@@ -27,7 +27,7 @@ const MenuContent = () => {
   if (filteredItems.length === 0) {
     return (
       <div className='flex items-center justify-center h-full p-8'>
-        <p className='text-gray-500 text-lg'>
+        <p className='text-[var(--color-gray-500)] text-lg'>
           {language === 'en'
             ? 'No menus available in this category'
             : '해당 점포에 품목이 없습니다'}
@@ -37,7 +37,7 @@ const MenuContent = () => {
   }
 
   return (
-    <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 p-4'>
+    <div className='grid grid-cols-2 sm:grid-cols-3 gap-3 p-3'>
       {filteredItems.map((menu) => (
         <MenuItemCard
           key={menu.menuId}
