@@ -36,7 +36,7 @@ const MenuItemCard = ({ menu, isSearched }: MenuItemCardProps) => {
           // [핵심 변경사항]
           // aspect-square: 너비에 맞춰 높이를 1:1 비율로 자동 설정
           // object-contain: 이미지가 잘리지 않고 비율을 유지하며 전체가 다 보이도록 설정
-          className='w-full h-full object-contain'
+          className='w-full h-full object-cover'
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/logo.png';
           }}
