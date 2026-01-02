@@ -18,8 +18,8 @@ export default function ChatBubble({
         className={`max-w-[70%] rounded-lg px-4 py-2 shadow-md ${
           isUser
             ? isUpdating
-              ? 'bg-[var(--color-indigo-300)] text-[var(--color-indigo-900)] rounded-br-none'
-              : 'bg-[var(--color-indigo-200)] text-[var(--color-indigo-900)] rounded-br-none'
+              ? 'bg-[var(--color-primary)] text-[var(--color-primary-foreground)] rounded-br-none'
+              : 'bg-[var(--color-secondary)] text-[var(--color-foreground)] rounded-br-none'
             : 'bg-[var(--color-indigo-100)] text-[var(--color-indigo-700)] rounded-bl-none'
         }`}
       >

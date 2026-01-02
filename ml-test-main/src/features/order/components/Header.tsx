@@ -96,7 +96,7 @@ const Header = () => {
                 // [변경] 메뉴 아이템 호버: Indigo -> Accent
                 className='w-full px-4 py-2 text-left text-popover-foreground hover:bg-accent hover:text-accent-foreground transition-colors'
               >
-                {language === 'en' ? 'Deactivate Table' : '테이블 비활성화'}
+                {language === 'en' ? 'Deactivate Kiosk' : '키오스크 비활성화'}
               </button>
             </div>
           )}

@@ -59,7 +59,7 @@ const CartItem = ({ item }: CartItemProps) => {
       </p>
 
       {/* Price */}
-      <p className='text-xs text-[var(--color-slate-600)] mb-2'>
+      <p className='text-xs text-[var(--color-indigo-50)] mb-2'>
         {item.menu.menuPrice.toLocaleString()} {translatedCurrency}
       </p>
 
