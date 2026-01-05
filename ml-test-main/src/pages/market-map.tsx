@@ -9,44 +9,42 @@ export default function MarketMapPage() {
     selectedShopId,
     isNavigationActive,
     selectShop,
-    setNavigation,
-    resetMap
+    setNavigation
   } = useMapStore();
 
   const currentShop = marketShops.find((s) => s.id === selectedShopId) || null;
 
-  // 페이지 언마운트 시 상태 초기화 (선택 사항)
-  // useEffect(() => {
-  //   return () => resetMap();
-  // }, []);
-
   return (
-    // [변경] Grid 레이아웃 제거 -> 전체 화면을 사용하는 Relative 컨테이너
-    // 상단 헤더 등을 제외한 높이 계산 (예: calc(100vh - 60px))
-    <main className="relative w-full h-[calc(100vh-60px)] overflow-hidden bg-[var(--color-map-bg)]">
+    // [수정 핵심] h-screen -> h-full
+    // h-screen: 화면 전체 높이 (레이아웃 무시하고 꽉 채움 -> 하단바와 겹침)
+    // h-full: 부모(MainLayout의 Outlet 영역)가 주는 높이만큼만 채움 (하단바 위까지만 옴)
+    <div className="flex flex-col w-full h-full overflow-hidden bg-[var(--color-map-bg)] relative">
       
-      {/* 1. 지도 영역 (배경) */}
-      <div className="w-full h-full">
+      {/* 지도 영역 컨테이너: flex-1로 남은 공간 꽉 채우기 */}
+      <div className="flex-1 relative w-full h-full min-h-0">
+        
+        {/* 실제 지도 컴포넌트 */}
         <MapView
           shops={marketShops}
           selectedShopId={selectedShopId}
           onShopSelect={selectShop}
           showNavigation={isNavigationActive}
         />
-      </div>
 
-      {/* 2. 상세 정보 패널 (플로팅 카드) */}
-      {/* 상점이 선택되었을 때만 우측 상단에 표시 */}
-      {currentShop && (
-        <div className="absolute top-6 right-6 z-20">
-          <ShopDetailsPanel
-            shop={currentShop}
-            isNavigating={isNavigationActive}
-            onStartNavigation={() => setNavigation(!isNavigationActive)}
-            onClose={() => selectShop(null)} // 닫기 기능 추가 필요 시 사용
-          />
-        </div>
-      )}
-    </main>
+        {/* 플로팅 팝업 */}
+        {currentShop && (
+          <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+            <div className="pointer-events-auto">
+              <ShopDetailsPanel
+                shop={currentShop}
+                isNavigating={isNavigationActive}
+                onStartNavigation={() => setNavigation(!isNavigationActive)}
+                onClose={() => selectShop(null)}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

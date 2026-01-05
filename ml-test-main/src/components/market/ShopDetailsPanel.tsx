@@ -22,7 +22,7 @@ export function ShopDetailsPanel({
     <div 
       className="w-[380px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-md 
                  rounded-3xl shadow-2xl border border-white/20 overflow-hidden 
-                 transition-all duration-300 animate-in fade-in slide-in-from-right-4"
+                 transition-all duration-300 animate-in fade-in slide-in-from-left-4"
     >
       {/* 카드 헤더 영역 */}
       <div className="p-6 pb-0 relative">
