@@ -33,7 +33,7 @@ export default function MarketMapPage() {
 
         {/* 플로팅 팝업 */}
         {currentShop && (
-          <div className="absolute left-6 top-1/2 -translate-y-1/2 z-20 pointer-events-none">
+          <div className="absolute left-6 top-5/13 -translate-y-1/2 z-20 pointer-events-none">
             <div className="pointer-events-auto">
               <ShopDetailsPanel
                 shop={currentShop}

@@ -8,7 +8,7 @@ interface MapViewProps {
   showNavigation: boolean;
 }
 
-// ... (상수 및 헬퍼 함수들은 기존 코드 유지: KIOSK, ENTRY, pointsToPath 등) ...
+// 상수 및 헬퍼 함수
 const KIOSK = { id: "kiosk", x: 920, y: 3400, guideX: 920, guideY: 3425 };
 const ENTRY = { x: 840, y: 3425 };
 const WEST_TURN = { x: 840, y: 285 };
@@ -33,22 +33,26 @@ export function MapView({
   onShopSelect,
   showNavigation,
 }: MapViewProps) {
-  const containerRef = useRef<HTMLDivElement>(null); // 스크롤 제어를 위한 Ref
+  const containerRef = useRef<HTMLDivElement>(null);
   const selectedShop = shops.find((s) => s.id === selectedShopId);
-
-  // [추가] 상점 선택 시 자동 스크롤 로직
+  useEffect(() => {
+    if (containerRef.current) {
+      // scrollHeight: 전체 스크롤 높이
+      // behavior: "instant" -> 애니메이션 없이 즉시 이동 (처음부터 거기 있었던 것처럼)
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: "instant",
+      });
+    }
+  }, []);
+  // [기능] 상점 선택 시 자동 스크롤 (화면 중앙 정렬)
   useEffect(() => {
     if (selectedShop && containerRef.current) {
       const container = containerRef.current;
-      const svgHeight = 3600; // SVG 원본 높이
+      const svgHeight = 3600;
       
-      // 현재 컨테이너의 실제 스크롤 높이와 SVG 비율 계산
       const scrollRatio = container.scrollHeight / svgHeight;
-      
-      // 타겟 Y 위치 (SVG 좌표 -> 픽셀 좌표 변환)
       const targetPixelY = selectedShop.y * scrollRatio;
-      
-      // 화면 중앙에 오도록 계산 (뷰포트 높이의 절반을 뺌)
       const centerOffset = container.clientHeight / 2;
       
       container.scrollTo({
@@ -56,10 +60,9 @@ export function MapView({
         behavior: "smooth",
       });
     }
-  }, [selectedShopId, showNavigation]); // 상점이 바뀌거나 내비게이션 시작 시 동작
+  }, [selectedShopId, showNavigation]);
 
   const getPathData = () => {
-     // ... (기존 로직 동일) ...
      if (!showNavigation || !selectedShop) return "";
      const target = { x: selectedShop.guideX, y: selectedShop.guideY };
      const targetYOnHall = clampY(target.y);
@@ -82,15 +85,14 @@ export function MapView({
   };
 
   return (
-    // [변경] h-full로 부모 높이 상속, 부드러운 스크롤
     <div 
       ref={containerRef}
       className="h-full overflow-y-auto overflow-x-hidden bg-[var(--color-map-bg)] scroll-smooth custom-scrollbar"
     >
       <svg
         viewBox="0 0 1200 3600"
-        style={{ width: "100%", aspectRatio: "1200/3600" }} // 반응형 유지
-        className="block min-w-[600px]" // 너무 작아지지 않도록 최소 너비 설정
+        style={{ width: "100%", aspectRatio: "1200/3600" }}
+        className="block min-w-[600px]"
         preserveAspectRatio="xMidYMin meet"
       >
         {/* 배경 및 구조물 */}
@@ -106,11 +108,18 @@ export function MapView({
         <g>
           {shops.map((shop) => {
             const isSelected = selectedShopId === shop.id;
+            
+            // [추가] 64~83호 세로 텍스트 판별 로직
+            const n = Number(shop.id);
+            const isVerticalText = n >= 64 && n <= 83;
+            const centerX = shop.x + shop.width / 2;
+            const centerY = shop.y + shop.height / 2;
+
             return (
               <g
                 key={shop.id}
                 className="cursor-pointer transition-opacity duration-200"
-                style={{ opacity: selectedShopId && !isSelected ? 0.6 : 1 }} // 선택 안된 상점은 약간 흐리게
+                style={{ opacity: selectedShopId && !isSelected ? 0.6 : 1 }}
                 onClick={() => onShopSelect(shop.id)}
               >
                 <rect
@@ -120,13 +129,23 @@ export function MapView({
                   strokeWidth={isSelected ? "3" : "1"}
                   className="transition-all duration-300"
                 />
+                
+                {/* [수정] 텍스트 줄바꿈 로직 적용 */}
                 <text
-                  x={shop.x + shop.width / 2} y={shop.y + shop.height / 2}
+                  x={centerX} y={centerY}
                   textAnchor="middle" dominantBaseline="middle"
                   fill={isSelected ? "white" : "var(--color-map-text-gray)"}
                   className="select-none text-[12px] font-medium"
                 >
-                  {shop.number}
+                  {isVerticalText ? (
+                    <>
+                      <tspan x={centerX} dy="-0.6em">점</tspan>
+                      {/* '점 64호' 등에서 숫자만 추출하거나 뒷부분만 표시 */}
+                      <tspan x={centerX} dy="1.2em">{shop.number.replace('점', '').trim()}</tspan>
+                    </>
+                  ) : (
+                    shop.number
+                  )}
                 </text>
               </g>
             );
@@ -140,19 +159,25 @@ export function MapView({
               d={getPathData()}
               fill="none"
               stroke="var(--color-map-shop-selected)"
-              strokeWidth="12" // 경로 두께 약간 증가
+              strokeWidth="12"
               strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="20, 20"
               opacity="0.8"
             >
               <animate attributeName="stroke-dashoffset" from="40" to="0" dur="1s" repeatCount="indefinite" />
             </path>
-            {/* 목적지 핑핑이 효과 */}
-            <circle cx={selectedShop.guideX} cy={selectedShop.guideY} r="16" fill="var(--color-map-destination)" className="animate-pulse" />
+            
+            {/* [수정] 목적지 점: 애니메이션(animate-pulse) 제거하여 고정 */}
+            <circle 
+              cx={selectedShop.guideX} 
+              cy={selectedShop.guideY} 
+              r="16" 
+              fill="var(--color-map-destination)" 
+            />
           </g>
         )}
 
-        {/* 키오스크 위치 */}
+        {/* 현위치 */}
         <g transform={`translate(${KIOSK.x}, ${KIOSK.y})`}>
           <circle r="30" cx="25" cy="25" fill="var(--color-map-current-location)" fillOpacity="0.2" />
           <rect width="50" height="50" rx="12" fill="var(--color-map-current-location)" />
