@@ -10,19 +10,19 @@ interface MapViewProps {
 
 const KIOSK = {
   id: "kiosk",
-  x: 3400,
-  y: 920,
-  guideX: 3425,
-  guideY: 920,
+  x: 920,
+  y: 3400,
+  guideX: 920,
+  guideY: 3425,
 };
 
-const ENTRY = { x: 3425, y: 840 };
-const WEST_TURN = { x: 285, y: 840 };
-const X_MIN = 285;
-const X_MAX = 3472.5;
+const ENTRY = { x: 840, y: 3425 };
+const WEST_TURN = { x: 840, y: 285 };
+const Y_MIN = 285;
+const Y_MAX = 3472.5;
 
-function clampX(x: number) {
-  return Math.min(X_MAX, Math.max(X_MIN, x));
+function clampY(y: number) {
+  return Math.min(Y_MAX, Math.max(Y_MIN, y));
 }
 
 function is64to100(shop: Shop) {
@@ -53,65 +53,61 @@ export function MapView({
       y: selectedShop.guideY,
     };
 
-    const targetXOnHall = clampX(target.x);
+    // 회전 후에는 Y축이 메인 통로가 됨
+    const targetYOnHall = clampY(target.y);
     const pts: Array<{ x: number; y: number }> = [];
 
     pts.push({ x: KIOSK.guideX, y: KIOSK.guideY });
     pts.push({ x: ENTRY.x, y: ENTRY.y });
 
     if (is64to100(selectedShop)) {
-      pts.push({ x: WEST_TURN.x, y: ENTRY.y });
+      pts.push({ x: ENTRY.x, y: WEST_TURN.y });
       pts.push({ x: WEST_TURN.x, y: WEST_TURN.y });
-      pts.push({ x: WEST_TURN.x, y: target.y });
+      pts.push({ x: target.x, y: WEST_TURN.y });
       pts.push({ x: target.x, y: target.y });
       return pointsToPath(pts);
     }
 
-    pts.push({ x: targetXOnHall, y: ENTRY.y });
-    pts.push({ x: targetXOnHall, y: target.y });
+    pts.push({ x: ENTRY.x, y: targetYOnHall });
+    pts.push({ x: target.x, y: targetYOnHall });
     pts.push({ x: target.x, y: target.y });
 
     return pointsToPath(pts);
   };
 
   return (
-    /* 수정 포인트:
-      1. h-full w-full: 부모 영역 꽉 채움
-      2. overflow-x-auto: 가로 스크롤 허용
-      3. overflow-y-hidden: 세로 스크롤 방지
-    */
-    <div className="h-full overflow-x-auto overflow-y-hidden bg-[var(--color-map-bg)]">
+    // 가로 스크롤 대신 세로 스크롤이 필요할 수 있으나, 요구사항에 맞춰 레이아웃 유지
+    <div className="h-full overflow-y-auto overflow-x-hidden bg-[var(--color-map-bg)]">
       <svg
-        viewBox="0 0 3600 1200"
-        /* 핵심 수정 사항:
-           1. height: "100%" -> 화면 세로 높이에 강제로 맞춤.
-           2. aspectRatio: "3600/1200" -> 높이가 100%일 때 비율에 맞춰 가로 길이를 강제로 늘림.
-              (이렇게 해야 화면이 좁아도 지도가 찌그러지지 않고 옆으로 넘어갑니다)
-        */
-        style={{ height: "100%", aspectRatio: "3600/1200" }}
+        viewBox="0 0 1200 3600"
+        style={{ width: "100%", aspectRatio: "1200/3600" }}
         className="block"
-        // preserveAspectRatio를 제거하거나 none으로 두는 것보다,
-        // CSS로 크기를 강제했으므로 xMinYMid meet을 유지해도 꽉 차게 나옵니다.
-        preserveAspectRatio="xMinYMid meet"
+        preserveAspectRatio="xMidYMin meet"
       >
-        <rect x="0" y="0" width="3600" height="1200" fill="var(--color-map-bg)" />
+        {/* 배경 전 영역 */}
+        <rect x="0" y="0" width="1200" height="3600" fill="var(--color-map-bg)" />
 
+        {/* 전체 테두리 라인 */}
         <rect
           x="50"
           y="50"
-          width="3500"
-          height="1100"
+          width="1100"
+          height="3500"
           fill="var(--color-map-bg)"
           stroke="var(--color-map-border-light)"
           strokeWidth="1"
           rx="8"
         />
 
+        {/* 복도(길) 영역 회전 반영 */}
         <g fill="var(--color-map-white)" stroke="var(--color-map-border)">
-          <rect x="270" y="50" width="30" height="1100" />
-          <rect x="270" y="820" width="3280" height="40" />
+          {/* 세로로 긴 복도 */}
+          <rect x="50" y="270" width="1100" height="30" />
+          {/* 하단 가로 복도 */}
+          <rect x="820" y="270" width="40" height="3280" />
         </g>
 
+        {/* 상점 레이어 */}
         <g>
           {shops.map((shop) => {
             const isSelected = selectedShopId === shop.id;
@@ -139,6 +135,8 @@ export function MapView({
                   dominantBaseline="middle"
                   fill={isSelected ? "white" : "var(--color-map-text-gray)"}
                   className="select-none text-[12px]"
+                  // 텍스트가 세로로 긴 상점에서 깨지지 않도록 회전이 필요하면 아래 속성 추가 가능
+                  // transform={`rotate(90, ${shop.x + shop.width / 2}, ${shop.y + shop.height / 2})`}
                 >
                   {shop.number}
                 </text>
@@ -147,6 +145,7 @@ export function MapView({
           })}
         </g>
 
+        {/* 경로 안내 레이어 */}
         {showNavigation && selectedShop && (
           <g>
             <path
@@ -167,6 +166,7 @@ export function MapView({
               />
             </path>
 
+            {/* 목적지 표시 */}
             <circle
               cx={selectedShop.guideX}
               cy={selectedShop.guideY}
@@ -177,6 +177,7 @@ export function MapView({
           </g>
         )}
 
+        {/* 현위치 (키오스크) */}
         <g transform={`translate(${KIOSK.x}, ${KIOSK.y})`}>
           <rect width="50" height="50" rx="4" fill="var(--color-map-current-location)" />
           <text
