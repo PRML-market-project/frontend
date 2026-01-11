@@ -107,7 +107,7 @@ const StoreEntry = () => {
               htmlFor='table-number'
               className='block text-sm font-medium text-muted-foreground mb-1'
             >
-              테이블 번호
+              키오스크 번호
             </label>
             <input
               id='table-number'
@@ -117,7 +117,7 @@ const StoreEntry = () => {
               // [변경] 위와 동일하게 스타일 적용
               className='w-full px-4 py-3 bg-background border border-input rounded-lg shadow-sm text-foreground 
                          focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring placeholder:text-muted-foreground/50'
-              placeholder='테이블 번호를 입력하세요'
+              placeholder='키오스크 번호를 입력하세요'
               value={kioskNumber}
               onChange={(e) => setTableNumber(e.target.value)}
             />

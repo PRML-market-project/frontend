@@ -51,6 +51,7 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
   const { kioskId } = useParams();
   const { fetchOrders } = useOrderHistoryStore();
   const { selectAndNavigate } = useMapStore();
+  
   const getJosa = (word: string, josa1: string, josa2: string) => {
     const lastChar = word.charCodeAt(word.length - 1);
     const hasJongseong = (lastChar - 0xAC00) % 28 > 0;
@@ -114,27 +115,27 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         if (items.length > 0 && items[0]?.target_id) {
           const targetId = String(items[0].target_id);
 
-      // 1. 전체 데이터에서 해당 ID의 가게 정보를 찾음
+          // 1. 전체 데이터에서 해당 ID의 가게 정보를 찾음
           const shopInfo = marketShops.find((s) => s.id === targetId);
 
-      // 2. 가게 정보가 있다면 메시지 강제 변경
+          // 2. 가게 정보가 있다면 메시지 강제 변경
           if (shopInfo) {
-        // "골드축산은" vs "다이소는" 처리
+            // "골드축산은" vs "다이소는" 처리
             const josa = getJosa(shopInfo.name, '은', '는');
 
-        // 예: "골드축산은 서측 A구역 84번에 있어요."
+            // 예: "골드축산은 서측 A구역 84번에 있어요."
             finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}번에 있어요.`;
-           }
+          }
 
-      // 3. 변경된 메시지로 업데이트 및 음성 출력
+          // 3. 변경된 메시지로 업데이트 및 음성 출력
           updateLastMessage(finalMessage);
           getSpeech(finalMessage, language === 'en' ? 'en' : 'ko');
 
-      // 4. 뷰 변경 및 지도 활성화
+          // 4. 뷰 변경 및 지도 활성화
           setCurrentView('map');
           selectAndNavigate(targetId);
         } else {
-      // ID를 못 찾았을 경우 GPT 원본 메시지 출력
+          // ID를 못 찾았을 경우 GPT 원본 메시지 출력
           updateLastMessage(chat_message);
           getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
         }
@@ -182,7 +183,46 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         throw new Error('GPT 서버 응답 오류');
       }
 
-      const data = await response.json();
+      // 1. 응답을 먼저 텍스트로 받습니다.
+      const responseText = await response.text();
+      let data: any;
+      let isJson = false;
+
+      // 2. JSON 파싱 시도
+      try {
+        data = JSON.parse(responseText);
+        // 파싱된 결과가 객체인지 확인 (단순 문자열 JSON "Hello" 방지)
+        if (data && typeof data === 'object') {
+          isJson = true;
+        }
+      } catch (e) {
+        // JSON 파싱 실패 시 Plain Text로 간주
+        isJson = false;
+      }
+
+      // 3. JSON이 아닌 경우 (단순 문자열 응답 처리)
+      if (!isJson) {
+        console.log('Non-JSON Response received:', responseText);
+        
+        // 화면과 음성으로 텍스트 출력
+        updateLastMessage(responseText);
+        getSpeech(responseText, language === 'en' ? 'en' : 'ko');
+
+        // 함수의 반환 타입(TextApiResponse)을 맞추기 위한 더미 객체 반환
+        return {
+          user_message: text,
+          chat_message: responseText,
+          result: {
+            status: 'success',
+            intent: '',
+            kiosk_id: Number(kiosk_id),
+            admin_id: Number(admin_id),
+            items: [],
+          },
+        };
+      }
+
+      // 4. JSON인 경우 (기존 로직 수행)
       console.log('GPT Response:', data);
 
       // Add chat message to chat
@@ -198,7 +238,8 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         );
       }
 
-      return data;
+      return data as TextApiResponse;
+
     } catch (err) {
       console.error('Error sending text:', err);
       const errorMessage =
