@@ -28,6 +28,7 @@ export const getSpeech = async (text: any, language: 'ko' | 'en' = 'ko') => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': '69420',
       },
       body: JSON.stringify({
         text: String(text),
