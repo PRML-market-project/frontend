@@ -1,106 +1,102 @@
-export const getSpeech = (text: any, language: 'ko' | 'en' = 'ko') => {
-  let voices: any[] = [];
-  let isSpeaking = false;
+// 현재 재생 중인 오디오를 추적하기 위한 변수
+let currentAudio: HTMLAudioElement | null = null;
 
-  //디바이스에 내장된 voice를 가져온다.
-  const setVoiceList = () => {
-    voices = window.speechSynthesis.getVoices();
-    console.log('Available voices:', voices);
-  };
-
-  // Initialize voices
-  setVoiceList();
-
-  // Handle voice loading
-  if (window.speechSynthesis.onvoiceschanged !== undefined) {
-    window.speechSynthesis.onvoiceschanged = setVoiceList;
+/**
+ * 오픈소스 TTS API를 사용하여 텍스트를 음성으로 변환하고 재생합니다.
+ * @param text - 음성으로 변환할 텍스트
+ * @param language - 언어 코드 ('ko' 또는 'en')
+ */
+export const getSpeech = async (text: any, language: 'ko' | 'en' = 'ko') => {
+  if (!text) {
+    console.warn('No text provided for speech synthesis');
+    return;
   }
 
-  const speech = (txt: string | undefined) => {
-    if (!txt) {
-      console.warn('No text provided for speech synthesis');
-      return;
+  try {
+    // 이전 재생 중인 오디오가 있으면 중지
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
     }
 
-    try {
-      // Cancel any ongoing speech
-      if (window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        console.log('Cancelled ongoing speech');
-      }
+    // TTS API URL (환경 변수에서 가져오거나 기본값 사용)
+    const ttsApiUrl = import.meta.env.VITE_TTS_API_URL || 'http://localhost:8000/api/tts';
+    
+    // API 요청
+    const response = await fetch(ttsApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: String(text),
+        language: language === 'ko' ? 'ko' : 'en',
+      }),
+    });
 
-      const lang = language === 'ko' ? 'ko-KR' : 'en-US';
-      const utterThis = new SpeechSynthesisUtterance(txt);
-      utterThis.lang = lang;
-      utterThis.volume = 0.375;
-
-      // Wait for voices to be loaded if they're not available yet
-      if (voices.length === 0) {
-        console.log('Waiting for voices to load...');
-        window.speechSynthesis.onvoiceschanged = () => {
-          voices = window.speechSynthesis.getVoices();
-          console.log('Voices loaded:', voices);
-          speakWithVoice();
-        };
-        return;
-      }
-
-      speakWithVoice();
-
-      function speakWithVoice() {
-        /* 
-          Find voice based on language
-          For Korean: ko-KR or ko_KR
-          For English: en-US or en_US
-        */
-        const targetVoice = voices.find(
-          (elem) => elem.lang === lang || elem.lang === lang.replace('-', '_')
-        );
-
-        console.log(`Found ${language} voice:`, targetVoice);
-
-        // Set voice if found, otherwise return
-        if (targetVoice) {
-          utterThis.voice = targetVoice;
-        } else {
-          console.warn(`No ${language} voice found. Available voices:`, voices);
-          return;
-        }
-
-        // Add event listeners for debugging
-        utterThis.onstart = () => {
-          console.log('Speech started:', txt);
-          isSpeaking = true;
-        };
-
-        utterThis.onend = () => {
-          console.log('Speech ended:', txt);
-          isSpeaking = false;
-        };
-
-        utterThis.onerror = (event) => {
-          console.error('Speech error:', event);
-          isSpeaking = false;
-
-          // If the error is 'not-allowed', try again after a short delay
-          if (event.error === 'not-allowed') {
-            console.log('Retrying speech after error...');
-            setTimeout(() => {
-              if (!isSpeaking) {
-                window.speechSynthesis.speak(utterThis);
-              }
-            }, 1000);
-          }
-        };
-
-        //utterance를 재생(speak)한다.
-        window.speechSynthesis.speak(utterThis);
-      }
-    } catch (error) {
-      console.error('Speech synthesis error:', error);
-      isSpeaking = false;
+    if (!response.ok) {
+      throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
     }
-  };
 
-  speech(text);
+    // 오디오 데이터를 Blob으로 받기
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    // 오디오 재생
+    const audio = new Audio(audioUrl);
+    currentAudio = audio;
+
+    audio.volume = 0.375; // 기존 볼륨 설정과 동일
+
+    // 재생 완료 시 URL 해제
+    audio.onended = () => {
+      URL.revokeObjectURL(audioUrl);
+      currentAudio = null;
+      console.log('Speech ended:', text);
+    };
+
+    audio.onerror = (error) => {
+      console.error('Audio playback error:', error);
+      URL.revokeObjectURL(audioUrl);
+      currentAudio = null;
+    };
+
+    audio.onplay = () => {
+      console.log('Speech started:', text);
+    };
+
+    await audio.play();
+  } catch (error) {
+    console.error('TTS API error:', error);
+    
+    // API 실패 시 폴백으로 크롬 웹 TTS 사용 (선택사항)
+    // 주석을 해제하면 API 실패 시 자동으로 크롬 TTS로 전환됩니다.
+    /*
+    console.log('Falling back to browser TTS...');
+    fallbackToBrowserTTS(text, language);
+    */
+  }
 };
+
+/**
+ * 폴백용 브라우저 TTS 함수 (필요시 사용)
+ */
+function fallbackToBrowserTTS(text: string, language: 'ko' | 'en') {
+  if (!('speechSynthesis' in window)) {
+    console.error('Speech synthesis not supported');
+    return;
+  }
+
+  // 이전 재생 중지
+  if (window.speechSynthesis.speaking) {
+    window.speechSynthesis.cancel();
+  }
+
+  const lang = language === 'ko' ? 'ko-KR' : 'en-US';
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = lang;
+  utterance.volume = 0.375;
+
+  window.speechSynthesis.speak(utterance);
+}

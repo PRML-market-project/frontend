@@ -4,6 +4,7 @@ export interface Menu {
   menuNameEn: string;
   menuPrice: number;
   imageUrl: string;
+  menuCount?: string; // 수량/무게 정보
 }
 
 export interface Category {

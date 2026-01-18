@@ -44,15 +44,23 @@ const MenuItemCard = ({ menu, isSearched }: MenuItemCardProps) => {
       </div>
       
       {/* 텍스트 영역 */}
-      <div className='flex flex-col flex-grow w-full p-4'>
-        <div className='flex-grow mb-3'>
+{/* 텍스트 영역 */}
+<div className='flex flex-col flex-grow w-full p-4 items-center'> {/* items-center 추가 */}
+        <div className='w-full mb-3 flex flex-col items-center'> {/* flex-col 및 items-center 추가 */}
           <h3
-            className='font-semibold text-md mb-1 truncate text-center text-[var(--color-indigo-900)]'
+            className='w-full font-semibold text-md mb-1 truncate text-center text-[var(--color-indigo-900)]'
             title={translatedName}
           >
             {translatedName}
           </h3>
-          <p className='text-sm text-[var(--color-indigo-700)] text-center'>
+          
+          {menu.menuCount && (
+            <p className='w-full text-xs text-[var(--color-indigo-600)] text-center mb-1'>
+              {menu.menuCount}
+            </p>
+          )}
+          
+          <p className='w-full text-sm text-[var(--color-indigo-700)] text-center'>
             {menu.menuPrice.toLocaleString()} ₩
           </p>
         </div>
