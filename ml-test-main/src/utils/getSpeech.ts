@@ -48,7 +48,7 @@ export const getSpeech = async (text: any, language: 'ko' | 'en' = 'ko') => {
     const audio = new Audio(audioUrl);
     currentAudio = audio;
 
-    audio.volume = 0.375; // 기존 볼륨 설정과 동일
+    audio.volume = 0.2; // 기존 볼륨 설정과 동일
 
     // 재생 완료 시 URL 해제
     audio.onended = () => {
