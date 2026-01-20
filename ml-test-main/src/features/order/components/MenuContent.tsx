@@ -3,20 +3,25 @@ import MenuItemCard from './MenuItemCard';
 import { useNavigationStore } from '@/store/navigationStore';
 import { useMenuStore } from '@/store/menuStore';
 import { useLanguageStore } from '@/store/languageStore';
+import { useVoiceStore } from '../store/voiceStore';
 
 const MenuContent = () => {
   const { currentCategoryId, currentMenuId } = useNavigationStore();
-  const { categories, getMenusByCategory } = useMenuStore();
+  const { getMenusByCategory } = useMenuStore();
   const { language } = useLanguageStore();
 
-  // 현재 선택된 카테고리의 메뉴들을 가져옴
-  const currentMenus = currentCategoryId
-    ? getMenusByCategory(currentCategoryId)
-    : [];
 
-  console.log('currentMenus:', currentMenus);
+  // ✅ 0. 커버가 켜져 있으면 "메뉴를 절대 렌더링하지 않음"
+  const isCovered = useVoiceStore((s) => s.isCovered);
+  if (isCovered) return null;
 
-  // 검색된 메뉴가 있다면 해당 메뉴를 맨 앞으로 정렬
+  // 1. 가게(카테고리)가 선택되지 않음
+  if (!currentCategoryId) return null;
+
+  // 2. 선택된 가게의 메뉴 가져오기
+  const currentMenus = getMenusByCategory(currentCategoryId);
+
+  // 검색된 메뉴가 있다면 맨 앞으로 정렬
   const filteredItems = currentMenus.reduce<Menu[]>((items, item) => {
     if (currentMenuId !== null && item.menuId === currentMenuId) {
       return [item, ...items];
@@ -24,6 +29,7 @@ const MenuContent = () => {
     return [...items, item];
   }, []);
 
+  // 3. 가게는 선택했는데 메뉴가 없음
   if (filteredItems.length === 0) {
     return (
       <div className='flex items-center justify-center h-full p-8'>

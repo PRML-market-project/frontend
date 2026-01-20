@@ -97,6 +97,7 @@ export const useMenuStore = create<MenuState>()(
               categoryId: category.category_id,
               categoryName: category.category_name,
               categoryNameEn: category.category_name_en,
+              categoryType: category.category_type || '기타',
               menus: menus,
             };
           });

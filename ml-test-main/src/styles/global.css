@@ -116,7 +116,8 @@
   /* Warm White / Ivory Backgrounds */
   --background: oklch(0.99 0.005 95); /* Soft Ivory White */
   --foreground: oklch(0.25 0.02 90); /* Dark Warm Brown/Gray */
-  
+  --defaultimage-matte: #f1ede6;
+
   --card: oklch(1 0 0); /* Pure White for cards to pop against ivory bg */
   --card-foreground: oklch(0.25 0.02 90);
   
@@ -166,7 +167,7 @@
 .dark {
   --background: oklch(0.18 0.01 90); /* Deep Warm Gray/Brown */
   --foreground: oklch(0.96 0.01 90); /* Ivory Text */
-  
+
   --card: oklch(0.22 0.01 90); /* Lighter Warm Gray */
   --card-foreground: oklch(0.96 0.01 90);
   

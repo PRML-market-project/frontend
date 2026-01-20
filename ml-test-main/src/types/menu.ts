@@ -11,6 +11,7 @@ export interface Category {
   categoryId: number;
   categoryName: string;
   categoryNameEn: string;
+  categoryType: string;
   menus: Menu[];
 }
 

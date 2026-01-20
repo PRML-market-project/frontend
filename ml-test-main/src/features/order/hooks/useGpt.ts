@@ -9,15 +9,17 @@ import { useLanguageStore } from '@/store/languageStore';
 import { useParams } from 'react-router-dom';
 import { useOrderHistoryStore } from '@/store/orderHistoryStore';
 import { useMapStore } from '@/store/mapStore';
-import { marketShops } from '@/data/market-shops'; // 경로에 맞게 수정해주세요
+import { marketShops } from '@/data/market-shops';
 
 interface UseTextApiProps {
   apiUrl: string;
 }
 
+// [수정] category_type 추가
 interface ResponseItem {
   menu_id?: number;
   category_id?: number;
+  category_type?: string; // 추가됨
   quantity?: number;
   state?: string;
   target_id?: string;
@@ -35,23 +37,25 @@ interface TextApiResponse {
   };
 }
 
-//TODO: 리턴값에서 ITEMS가 배열이어야 하는지 체크
-
 export const useGpt = ({ apiUrl }: UseTextApiProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { addMessage, updateLastMessage } = useChatStore();
   const { categories, getMenusByCategory } = useMenuStore();
   const { updateQuantity, removeItem, addItem } = useCartStore();
-  const { setCurrentCategory, setCurrentMenu, setCurrentView } =
-    useNavigationStore();
+  const {
+    setCurrentCategory,
+    setCurrentMenu,
+    setCurrentView,
+    setCurrentCategoryType,
+  } = useNavigationStore();
   const { setShowOrderModal } = useOrderStore();
   const { clearCart, cartItems } = useCartStore();
   const { language } = useLanguageStore();
   const { kioskId } = useParams();
   const { fetchOrders } = useOrderHistoryStore();
   const { selectAndNavigate } = useMapStore();
-  
+
   const getJosa = (word: string, josa1: string, josa2: string) => {
     const lastChar = word.charCodeAt(word.length - 1);
     const hasJongseong = (lastChar - 0xAC00) % 28 > 0;
@@ -65,10 +69,9 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
     kiosk_id: number,
     chat_message: string
   ) => {
-    let totalAmount: number;
-    let formattedAmount: string;
-    let historyMessage: string;
-    let orders: ReturnType<typeof useOrderHistoryStore.getState>['orders'];
+
+    // 만약 items에 category_type이 있다면 여기서 활용 가능
+    // 예: console.log("가게 타입:", items[0]?.category_type);
 
     if (!intent) {
       updateLastMessage(chat_message);
@@ -81,12 +84,23 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         updateLastMessage(chat_message);
         getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
         console.log('카테고리 탐색:', items);
-        if (items.length > 0 && items[0]?.category_id != null) {
-          setCurrentView('menu');
-          if (items[0]?.menu_id !== null) {
-            setCurrentMenu(items[0].menu_id);
+        if (items.length > 0) {
+          const { category_id, category_type, menu_id } = items[0] ?? {};
+
+          // 1) 타입 먼저 적용
+          if (category_type) {
+            setCurrentCategoryType(category_type);
           }
-          setCurrentCategory(items[0].category_id);
+          setCurrentView('menu');
+
+          // 2) 그 다음 카테고리 선택
+          if (category_id != null) {
+            setCurrentCategory(category_id);
+          }
+          // 3) 메뉴까지 지정되면 선택
+          if (menu_id != null) {
+            setCurrentMenu(menu_id);
+          }
         }
         break;
 
@@ -95,47 +109,43 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
 
         console.log('메뉴 탐색:', items);
-        if (
-          items.length > 0 &&
-          items[0]?.category_id !== null &&
-          items[0]?.menu_id !== null
-        ) {
-          setCurrentCategory(items[0].category_id);
-          setCurrentView('menu');
-          setCurrentMenu(items[0].menu_id);
+        if (items.length > 0) {
+          const { category_id, category_type, menu_id } = items[0] ?? {};
+          if (category_type) {
+            setCurrentCategoryType(category_type);
+          }
+          if (category_id != null) {
+            setCurrentCategory(category_id);
+          }
+          if (menu_id != null) {
+            setCurrentView('menu');
+            setCurrentMenu(menu_id);
+          }
         }
         break;
 
-      //위치 안내 처리
+      // 위치 안내 처리
       case 'get_location':
-        let finalMessage = chat_message; // 기본값은 GPT가 준 메시지
+        let finalMessage = chat_message;
 
         console.log('위치 안내:', items);
 
         if (items.length > 0 && items[0]?.target_id) {
           const targetId = String(items[0].target_id);
 
-          // 1. 전체 데이터에서 해당 ID의 가게 정보를 찾음
           const shopInfo = marketShops.find((s) => s.id === targetId);
 
-          // 2. 가게 정보가 있다면 메시지 강제 변경
           if (shopInfo) {
-            // "골드축산은" vs "다이소는" 처리
             const josa = getJosa(shopInfo.name, '은', '는');
-
-            // 예: "골드축산은 서측 A구역 84번에 있어요."
             finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}번에 있어요.`;
           }
 
-          // 3. 변경된 메시지로 업데이트 및 음성 출력
           updateLastMessage(finalMessage);
           getSpeech(finalMessage, language === 'en' ? 'en' : 'ko');
 
-          // 4. 뷰 변경 및 지도 활성화
           setCurrentView('map');
           selectAndNavigate(targetId);
         } else {
-          // ID를 못 찾았을 경우 GPT 원본 메시지 출력
           updateLastMessage(chat_message);
           getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
         }
@@ -166,7 +176,6 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
     setError(null);
 
     try {
-      // Call GPT API
       const response = await fetch(`${apiUrl}/gpt`, {
         method: 'POST',
         headers: {
@@ -183,32 +192,25 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         throw new Error('GPT 서버 응답 오류');
       }
 
-      // 1. 응답을 먼저 텍스트로 받습니다.
       const responseText = await response.text();
       let data: any;
       let isJson = false;
 
-      // 2. JSON 파싱 시도
       try {
         data = JSON.parse(responseText);
-        // 파싱된 결과가 객체인지 확인 (단순 문자열 JSON "Hello" 방지)
         if (data && typeof data === 'object') {
           isJson = true;
         }
       } catch (e) {
-        // JSON 파싱 실패 시 Plain Text로 간주
         isJson = false;
       }
 
-      // 3. JSON이 아닌 경우 (단순 문자열 응답 처리)
       if (!isJson) {
         console.log('Non-JSON Response received:', responseText);
-        
-        // 화면과 음성으로 텍스트 출력
+
         updateLastMessage(responseText);
         getSpeech(responseText, language === 'en' ? 'en' : 'ko');
 
-        // 함수의 반환 타입(TextApiResponse)을 맞추기 위한 더미 객체 반환
         return {
           user_message: text,
           chat_message: responseText,
@@ -222,12 +224,8 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         };
       }
 
-      // 4. JSON인 경우 (기존 로직 수행)
       console.log('GPT Response:', data);
 
-      // Add chat message to chat
-
-      // Process the intent
       if (data.chat_message) {
         processIntent(
           data.result.intent,
