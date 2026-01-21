@@ -34,7 +34,6 @@ const MainLayout = () => {
           absolute inset-0
           bg-[url('/defaultimage.png')]
           bg-no-repeat bg-center bg-contain
-          opacity-50
         "
       />
     </div>

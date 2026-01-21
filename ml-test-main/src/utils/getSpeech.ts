@@ -21,8 +21,9 @@ export const getSpeech = async (text: any, language: 'ko' | 'en' = 'ko') => {
     }
 
     // TTS API URL (환경 변수에서 가져오거나 기본값 사용)
-    const ttsApiUrl = import.meta.env.VITE_TTS_API_URL || 'http://localhost:8000/api/tts';
-    
+    const baseApiUrl= import.meta.env.VITE_GPT_API_URL
+    const ttsApiUrl = `${baseApiUrl}/api/tts`;
+
     // API 요청
     const response = await fetch(ttsApiUrl, {
       method: 'POST',
