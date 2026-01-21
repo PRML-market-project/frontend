@@ -12,8 +12,8 @@ const MenuContent = () => {
 
 
   // ✅ 0. 커버가 켜져 있으면 "메뉴를 절대 렌더링하지 않음"
-  const isCovered = useVoiceStore((s) => s.isCovered);
-  if (isCovered) return null;
+  //const isCovered = useVoiceStore((s) => s.isCovered);
+  //if (isCovered) return null;
 
   // 1. 가게(카테고리)가 선택되지 않음
   if (!currentCategoryId) return null;

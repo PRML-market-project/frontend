@@ -51,3 +51,4 @@ export const useNavigationStore = create<NavigationState>((set, get) => ({
     // 기본 상태에서는 아무 것도 자동 선택하지 않음
   },
 }));
+
