@@ -110,24 +110,43 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
   break;
 
       case 'get_menu':
-        updateLastMessage(chat_message);
-        getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+  updateLastMessage(chat_message);
+  getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
 
-        console.log('메뉴 탐색:', items);
-        if (items.length > 0) {
-          const { category_id, category_type, menu_id } = items[0] ?? {};
-          if (category_type) {
-            setCurrentCategoryType(category_type);
-          }
-          if (category_id != null) {
-            setCurrentCategory(category_id);
-          }
-          if (menu_id != null) {
-            setCurrentView('menu');
-            setCurrentMenu(menu_id);
-          }
-        }
-        break;
+  if (items.length > 0) {
+    const { category_id, category_type, menu_id } = items[0] ?? {};
+
+    // 1) 뷰 모드 설정
+    setCurrentView('menu');
+
+    // 2) 카테고리 타입(대분류) 설정 (예: '청과', '정육')
+    if (category_type) {
+      setCurrentCategoryType(category_type);
+    }
+
+    // 3) 카테고리 ID(소분류/가게) 설정
+    // 숫자로 들어오는지 확인하고 Number()로 감싸주는 것이 안전합니다.
+    if (category_id != null) {
+      setCurrentCategory(Number(category_id));
+    }
+
+    // 4) 특정 메뉴 강조
+    if (menu_id != null) {
+      setCurrentMenu(Number(menu_id));
+    }
+  }
+  break;
+
+  case 'get_total_price':
+  // 1. AI가 계산한 상세 내역 및 총액 메시지를 채팅창에 업데이트
+  updateLastMessage(chat_message);
+
+  // 2. 해당 내용을 음성으로 안내
+  getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+
+  // 3. (옵션) 채팅창에만 응답하므로 별도의 화면 이동(setCurrentView) 로직은 생략합니다.
+  console.log('총 가격 계산 응답 완료:', chat_message);
+  break;
 
       // 위치 안내 처리
       case 'get_location':
@@ -161,6 +180,7 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
         break;
     }
+
   };
 
   const sendTextToApi = async (
