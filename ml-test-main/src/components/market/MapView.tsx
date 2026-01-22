@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useRef } from "react";
 import { Shop } from "@/types/shop";
 
 interface MapViewProps {
@@ -8,395 +8,192 @@ interface MapViewProps {
   showNavigation: boolean;
 }
 
-/**
- * Assumptions about Shop type:
- * - id: string
- * - number: string (ex: "1점" / "12" etc)
- * - name?: string (shop name in Korean)  ✅ used if exists
- * - x,y,width,height,guideX,guideY: number
- *
- * If your Shop uses a different name field, change `getShopLabel()`.
- */
+// --- 상수 및 설정 ---
+const KIOSK = { id: "kiosk", x: 400, y: 3450, guideX: 400, guideY: 3450 };
+const MAIN_CORRIDOR_X = 420; // 메인 세로 복도 위치
+const TOP_CORRIDOR_Y = 290;  // 상단 가로 복도 위치
 
-// --- constants / helpers ---
-const KIOSK = { id: "kiosk", x: 920, y: 3400, guideX: 920, guideY: 3425 };
-const ENTRY = { x: 840, y: 3425 };
-const WEST_TURN = { x: 840, y: 285 };
-const Y_MIN = 285;
-const Y_MAX = 3472.5;
+const categoryColors: Record<string, string> = {
+  "식당": "#FFEDD5",
+  "정육": "#FEE2E2",
+  "수산": "#DBEAFE",
+  "청과": "#DCFCE7",
+  "식품": "#FEF9C3",
+  "농산물 가공": "#E7DED0",
+  "잡화": "#EDE9FE",
+  "서비스업": "#FCE7F3",
+  "공실": "#F3F4F6",
+};
 
-function clampY(y: number) {
-  return Math.min(Y_MAX, Math.max(Y_MIN, y));
-}
-
-function is64to100(shop: Shop) {
-  const n = Number((shop as any).id);
-  return Number.isFinite(n) && n >= 64 && n <= 100;
+function isWestSide(shop: Shop) {
+  const n = Number(shop.id);
+  return (n >= 64 && n <= 100) || shop.section?.includes("서측");
 }
 
 function pointsToPath(points: Array<{ x: number; y: number }>) {
   if (points.length === 0) return "";
-  return points
-    .map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`))
-    .join(" ");
+  return points.map((p, i) => (i === 0 ? `M ${p.x} ${p.y}` : `L ${p.x} ${p.y}`)).join(" ");
 }
 
-function getShopLabel(shop: Shop) {
-  // ✅ show store name. If your type uses `shop.shopName` or `shop.title`, change here.
-  const anyShop = shop as any;
-  const name = (anyShop.name || anyShop.shopName || anyShop.title || "").toString().trim();
-  const number = (anyShop.number || "").toString().trim();
-
-  // If name exists: "가게명\n(번호)" 형태
-  if (name) return { line1: name, line2: number ? number : "" };
-
-  // fallback: number only
-  return { line1: number || "상점", line2: "" };
-}
-
-export function MapView({ shops, selectedShopId, onShopSelect, showNavigation }: MapViewProps) {
-  // true: fit screen / false: fit width + scroll
-  const [isFitScreen, setIsFitScreen] = useState(true);
+export function MapView({
+  shops,
+  selectedShopId,
+  onShopSelect,
+  showNavigation,
+}: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const selectedShop = shops.find((s) => s.id === selectedShopId);
 
-  const selectedShop = useMemo(
-    () => shops.find((s) => s.id === selectedShopId) || null,
-    [shops, selectedShopId]
-  );
-
-  // safer UX: background click toggles mode (keep your behavior)
-  const handleBackgroundClick = () => setIsFitScreen((prev) => !prev);
-
-  // scroll mode auto-focus selected shop
-  useEffect(() => {
-    if (!isFitScreen && selectedShop && containerRef.current) {
-      const container = containerRef.current;
-      const svgHeight = 3600;
-      const scrollRatio = container.scrollHeight / svgHeight;
-      const targetPixelY = selectedShop.y * scrollRatio;
-      const centerOffset = container.clientHeight / 2;
-
-      container.scrollTo({ top: targetPixelY - centerOffset, behavior: "smooth" });
-    }
-  }, [selectedShopId, isFitScreen, selectedShop]);
-
+  // 경로 데이터 생성 로직
   const getPathData = () => {
     if (!showNavigation || !selectedShop) return "";
-    const target = { x: selectedShop.guideX, y: selectedShop.guideY };
-    const targetYOnHall = clampY(target.y);
     const pts: Array<{ x: number; y: number }> = [];
-
     pts.push({ x: KIOSK.guideX, y: KIOSK.guideY });
-    pts.push({ x: ENTRY.x, y: ENTRY.y });
+    pts.push({ x: MAIN_CORRIDOR_X, y: KIOSK.guideY });
 
-    if (is64to100(selectedShop)) {
-      pts.push({ x: ENTRY.x, y: WEST_TURN.y });
-      pts.push({ x: WEST_TURN.x, y: WEST_TURN.y });
-      pts.push({ x: target.x, y: WEST_TURN.y });
-      pts.push({ x: target.x, y: target.y });
-      return pointsToPath(pts);
+    if (isWestSide(selectedShop)) {
+      if (selectedShop.y < 300) {
+        pts.push({ x: MAIN_CORRIDOR_X, y: TOP_CORRIDOR_Y });
+        pts.push({ x: selectedShop.guideX, y: TOP_CORRIDOR_Y });
+      } else {
+        pts.push({ x: MAIN_CORRIDOR_X, y: selectedShop.guideY });
+      }
+    } else {
+      pts.push({ x: MAIN_CORRIDOR_X, y: selectedShop.guideY });
     }
-
-    pts.push({ x: ENTRY.x, y: targetYOnHall });
-    pts.push({ x: target.x, y: targetYOnHall });
-    pts.push({ x: target.x, y: target.y });
+    pts.push({ x: selectedShop.guideX, y: selectedShop.guideY });
     return pointsToPath(pts);
   };
 
-  /**
-   * Visual scale:
-   * - FitScreen: everything smaller (so labels should stay readable)
-   * - FitWidth: bigger (scroll mode)
-   */
-  const labelSize = isFitScreen ? 12 : 14;
-  const subLabelSize = isFitScreen ? 10 : 12;
+  // 폰트 크기 고정
+  const fontSizeClass = "text-[42px]";
 
   return (
     <div
       ref={containerRef}
-      onClick={handleBackgroundClick}
-      className={[
-        "h-full w-full transition-all duration-300",
-        isFitScreen
-          ? "overflow-hidden flex justify-center items-center cursor-zoom-in"
-          : "overflow-y-auto overflow-x-hidden cursor-zoom-out scroll-smooth custom-scrollbar",
-      ].join(" ")}
-      style={
-        {
-          // ✅ Light theme tokens
-          "--map-bg": "#F5F7FB",
-          "--map-surface": "#FFFFFF",
-          "--map-surface-2": "#F0F3FA",
-          "--map-border": "#D6DEEE",
-          "--map-border-strong": "#B9C6E2",
-          "--map-hall": "#EEF2FF",
-          "--map-hall-stroke": "#CBD5FF",
-          "--map-text": "#0F172A",
-          "--map-muted": "#475569",
-          "--map-shop": "#FFFFFF",
-          "--map-shop-stroke": "#C8D2EA",
-          "--map-shop-hover": "#F3F6FF",
-          "--map-selected": "#2563EB",
-          "--map-selected-stroke": "#1D4ED8",
-          "--map-route": "#16A34A",
-          "--map-route-glow": "rgba(22,163,74,0.25)",
-          "--map-you": "#F59E0B",
-          "--map-you-glow": "rgba(245,158,11,0.25)",
-        } as React.CSSProperties
-      }
+      className="relative h-full w-full bg-[#f0f2f5] overflow-hidden flex justify-center items-center"
     >
       <svg
-        viewBox="0 0 1200 3600"
-        preserveAspectRatio={isFitScreen ? "xMidYMid meet" : "xMidYMin meet"}
-        className={[
-          "block transition-all duration-300",
-          isFitScreen ? "h-full w-auto max-w-full" : "w-full h-auto min-w-[600px]",
-        ].join(" ")}
+        viewBox="0 0 2800 3600"
+        preserveAspectRatio="xMidYMid meet"
+        className="block h-full w-auto"
       >
-        <defs>
-          {/* Soft shadow for the whole map panel */}
-          <filter id="panelShadow" x="-20%" y="-5%" width="140%" height="130%">
-            <feDropShadow dx="0" dy="12" stdDeviation="12" floodColor="#0B1220" floodOpacity="0.12" />
-          </filter>
-
-          {/* Card shadow for shops */}
-          <filter id="shopShadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#0B1220" floodOpacity="0.10" />
-          </filter>
-
-          {/* Selected glow */}
-          <filter id="selectedGlow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="0" stdDeviation="8" floodColor="#2563EB" floodOpacity="0.35" />
-          </filter>
-
-          {/* Route glow */}
-          <filter id="routeGlow" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="blur" />
-            <feColorMatrix
-              in="blur"
-              type="matrix"
-              values="
-                1 0 0 0 0
-                0 1 0 0 0
-                0 0 1 0 0
-                0 0 0 0.6 0"
-              result="glow"
-            />
-            <feMerge>
-              <feMergeNode in="glow" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-
-          {/* Text outline for readability */}
-          <style>
-            {`
-              .map-text-outline {
-                paint-order: stroke;
-                stroke: rgba(255,255,255,0.85);
-                stroke-width: 3px;
-                stroke-linejoin: round;
-              }
-            `}
-          </style>
-        </defs>
-
-        {/* Background */}
-        <rect x="0" y="0" width="1200" height="3600" fill="var(--map-bg)" />
-
-        {/* Map panel */}
-        <rect
-          x="50"
-          y="50"
-          width="1100"
-          height="3500"
-          rx="28"
-          fill="var(--map-surface)"
-          stroke="var(--map-border)"
-          strokeWidth="1"
-          filter="url(#panelShadow)"
-        />
-
-        {/* Header area (optional visual polish) */}
-        <rect x="70" y="70" width="1060" height="170" rx="20" fill="var(--map-surface-2)" />
-        <text x="100" y="150" fontSize="28" fontWeight="700" fill="var(--map-text)">
-          Market Map
-        </text>
-        <text x="100" y="190" fontSize="14" fontWeight="500" fill="var(--map-muted)">
-          탭: 확대/축소 · 상점 선택: 길안내
-        </text>
-
-        {/* Hallways */}
-        <g>
-          <rect x="50" y="270" width="1100" height="30" fill="var(--map-hall)" stroke="var(--map-hall-stroke)" />
-          <rect x="820" y="270" width="40" height="3280" fill="var(--map-hall)" stroke="var(--map-hall-stroke)" />
+        {/* 배경 및 도로 */}
+        <rect x="0" y="0" width="2800" height="3600" fill="#e5e7eb" />
+        <g fill="#ffffff" stroke="#cbd5e1" strokeWidth="2">
+          <rect x="400" y="270" width="40" height="3300" />
+          <rect x="20" y="270" width="2760" height="40" />
         </g>
 
-        {/* Shops */}
+        {/* 상점 리스트 렌더링 */}
         <g>
           {shops.map((shop) => {
             const isSelected = selectedShopId === shop.id;
-
             const centerX = shop.x + shop.width / 2;
             const centerY = shop.y + shop.height / 2;
 
-            const { line1, line2 } = getShopLabel(shop);
+            const bgColor = isSelected
+              ? "#FFFFFF"
+              : (categoryColors[shop.category] || "#F3F4F6");
 
-            // label layout
-            const hasTwoLines = Boolean(line2);
-            const labelY1 = hasTwoLines ? centerY - 6 : centerY;
-            const labelY2 = centerY + 14;
+            const borderColor = isSelected ? "#ef4444" : "#334155";
+            const borderThickness = isSelected ? "12" : "1.5";
 
             return (
               <g
                 key={shop.id}
-                className="cursor-pointer transition-opacity duration-200"
-                style={{ opacity: selectedShopId && !isSelected ? 0.68 : 1 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onShopSelect(shop.id);
-                }}
+                className="cursor-pointer"
+                style={{ opacity: selectedShopId && !isSelected ? 0.6 : 1 }}
+                onClick={(e) => { e.stopPropagation(); onShopSelect(shop.id); }}
               >
-                {/* Card */}
                 <rect
-                  x={shop.x}
-                  y={shop.y}
-                  width={shop.width}
-                  height={shop.height}
-                  rx="14"
-                  fill={isSelected ? "var(--map-selected)" : "var(--map-shop)"}
-                  stroke={isSelected ? "var(--map-selected-stroke)" : "var(--map-shop-stroke)"}
-                  strokeWidth={isSelected ? 3 : 1.2}
-                  filter={isSelected ? "url(#selectedGlow)" : "url(#shopShadow)"}
+                  x={shop.x} y={shop.y} width={shop.width} height={shop.height} rx="6"
+                  fill={bgColor}
+                  stroke={borderColor}
+                  strokeWidth={borderThickness}
+                  className="transition-all duration-200"
                 />
 
-                {/* Subtle hover overlay (works when not selected) */}
-                {!isSelected && (
-                  <rect
-                    x={shop.x}
-                    y={shop.y}
-                    width={shop.width}
-                    height={shop.height}
-                    rx="14"
-                    fill="transparent"
-                    className="transition-colors duration-200"
-                    style={{ pointerEvents: "none" }}
-                  />
-                )}
+                <text
+                  x={centerX} y={centerY}
+                  textAnchor="middle"
+                  dominantBaseline="middle"
+                  fill={isSelected ? "#ef4444" : "#1e293b"}
+                  className={`select-none font-black ${fontSizeClass}`}
+                  style={{ letterSpacing: "-0.05em" }}
+                >
+                  {(() => {
+                    const words = shop.name.split(' ');
+                    const initialDy = words.length === 1 ? "0.14em" : `-${(words.length - 1) * 0.55}em`;
 
-                {/* Label pill behind text (so it reads on any color) */}
-                <g pointerEvents="none">
-                  <rect
-                    x={shop.x + 10}
-                    y={shop.y + shop.height / 2 - (hasTwoLines ? 22 : 14)}
-                    width={shop.width - 20}
-                    height={hasTwoLines ? 44 : 28}
-                    rx="14"
-                    fill={isSelected ? "rgba(0,0,0,0.18)" : "rgba(15,23,42,0.04)"}
-                    stroke={isSelected ? "rgba(255,255,255,0.25)" : "rgba(15,23,42,0.08)"}
-                  />
-
-                  {/* Store name */}
-                  <text
-                    x={centerX}
-                    y={labelY1}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
-                    fontSize={labelSize}
-                    fontWeight={800}
-                    fill={isSelected ? "white" : "var(--map-text)"}
-                    className={!isSelected ? "map-text-outline" : ""}
-                  >
-                    {line1}
-                  </text>
-
-                  {/* Number */}
-                  {hasTwoLines && (
-                    <text
-                      x={centerX}
-                      y={labelY2}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={subLabelSize}
-                      fontWeight={700}
-                      fill={isSelected ? "rgba(255,255,255,0.92)" : "var(--map-muted)"}
-                      className={!isSelected ? "map-text-outline" : ""}
-                    >
-                      {line2}
-                    </text>
-                  )}
-                </g>
+                    return words.map((word, index) => (
+                      <tspan
+                        key={index}
+                        x={centerX}
+                        dy={index === 0 ? initialDy : "1.1em"}
+                      >
+                        {word}
+                      </tspan>
+                    ));
+                  })()}
+                </text>
               </g>
             );
           })}
         </g>
 
-        {/* Route */}
+        {/* 경로 안내 선 */}
         {showNavigation && selectedShop && (
           <g className="pointer-events-none">
-            {/* glow layer */}
             <path
               d={getPathData()}
               fill="none"
-              stroke="var(--map-route-glow)"
-              strokeWidth={isFitScreen ? 22 : 14}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity="1"
-              filter="url(#routeGlow)"
-              vectorEffect="non-scaling-stroke"
-            />
-            {/* solid layer */}
-            <path
-              d={getPathData()}
-              fill="none"
-              stroke="var(--map-route)"
-              strokeWidth={isFitScreen ? 14 : 10}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeDasharray={isFitScreen ? "26, 26" : "18, 18"}
-              opacity="0.95"
-              vectorEffect="non-scaling-stroke"
+              stroke="#ef4444"
+              strokeWidth="20"
+              strokeLinecap="round" strokeLinejoin="round"
+              strokeDasharray="40, 40"
             >
-              <animate attributeName="stroke-dashoffset" from="44" to="0" dur="1s" repeatCount="indefinite" />
+              <animate attributeName="stroke-dashoffset" from="80" to="0" dur="1.2s" repeatCount="indefinite" />
             </path>
-
-            {/* destination pin */}
-            <g transform={`translate(${selectedShop.guideX}, ${selectedShop.guideY})`}>
-              <circle r={isFitScreen ? 18 : 14} fill="var(--map-route)" />
-              <circle r={isFitScreen ? 30 : 22} fill="var(--map-route)" opacity="0.15" />
-            </g>
+            <circle cx={selectedShop.guideX} cy={selectedShop.guideY} r="30" fill="#ef4444">
+              <animate attributeName="r" values="25;35;25" dur="1s" repeatCount="indefinite" />
+            </circle>
           </g>
         )}
 
-        {/* Current location (kiosk) */}
-        <g transform={`translate(${KIOSK.guideX}, ${KIOSK.guideY})`} className="pointer-events-none">
-          <circle r={isFitScreen ? 46 : 30} fill="var(--map-you)" opacity="0.18" />
-          <circle r={isFitScreen ? 62 : 42} fill="var(--map-you-glow)" opacity="0.22" />
-
-          <rect
-            width={isFitScreen ? 96 : 64}
-            height={isFitScreen ? 96 : 64}
-            x={isFitScreen ? -48 : -32}
-            y={isFitScreen ? -48 : -32}
-            rx="18"
-            fill="var(--map-you)"
-            filter="url(#shopShadow)"
-          />
-
+        {/* 현위치 표시 */}
+        <g transform={`translate(${KIOSK.x}, ${KIOSK.y})`} className="pointer-events-none">
+          <circle r="120" fill="#3b82f6" fillOpacity="0.15">
+             <animate attributeName="r" values="110;130;110" dur="2s" repeatCount="indefinite" />
+          </circle>
+          <rect width="220" height="110" x="-110" y="-55" rx="55" fill="#3b82f6" stroke="#ffffff" strokeWidth="4" />
           <text
-            x="0"
-            y={isFitScreen ? 5 : 3}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fill="white"
-            fontSize={isFitScreen ? 16 : 12}
-            fontWeight={900}
+            y="5" textAnchor="middle" dominantBaseline="middle" fill="white"
+            className="text-[40px] font-black"
           >
             현위치
           </text>
         </g>
       </svg>
+
+      {/* 우측 하단 범례 패널 */}
+      <div className="absolute right-8 bottom-8 bg-white/95 backdrop-blur-md p-7 rounded-[32px] shadow-2xl border border-gray-100 pointer-events-none min-w-[280px]">
+        {/* 추가된 메인 타이틀 */}
+        <h3 className="text-[20px] font-black text-gray-900 mb-1 px-1">대조시장 배치도</h3>
+        <h4 className="text-[10px] font-black text-gray-400 mb-5 uppercase tracking-[0.2em] px-1">Shop Categories</h4>
+
+        <div className="grid grid-cols-2 gap-x-8 gap-y-4">
+          {Object.entries(categoryColors).map(([category, color]) => (
+            <div key={category} className="flex items-center gap-3">
+              <div
+                className="w-5 h-5 rounded-md border border-black/10 shadow-sm"
+                style={{ backgroundColor: color }}
+              />
+              <span className="text-[14px] font-extrabold text-gray-700 whitespace-nowrap">{category}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

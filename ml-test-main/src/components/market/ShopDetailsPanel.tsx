@@ -19,25 +19,25 @@ export function ShopDetailsPanel({
   return (
     // [변경] 전체 높이 사이드바 -> 플로팅 카드 스타일
     // max-h 설정으로 내용이 길어지면 카드 내부에서 스크롤
-    <div 
-      className="w-[380px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-md 
-                 rounded-3xl shadow-2xl border border-white/20 overflow-hidden 
-                 transition-all duration-300 animate-in fade-in slide-in-from-left-4"
+    <div
+      className="w-[420px] max-h-[80vh] flex flex-col bg-white/95 backdrop-blur-md
+                 rounded-3xl shadow-2xl border border-white/20 overflow-hidden
+                 transition-all duration-300 animate-in fade-in slide-in-from-right-4"
     >
       {/* 카드 헤더 영역 */}
       <div className="p-6 pb-0 relative">
         {/* 닫기 버튼 (옵션) */}
         {onClose && (
-          <button 
+          <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
           </button>
         )}
-        
+
         <span className="inline-block px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full mb-3 border border-amber-200">
-          점포 {shop.number}
+          {shop.number}
         </span>
         <h2 className="text-2xl font-black text-gray-900 leading-tight">
           {shop.name}
@@ -49,7 +49,7 @@ export function ShopDetailsPanel({
 
       {/* 스크롤 가능한 콘텐츠 영역 */}
       <div className="p-6 overflow-y-auto custom-scrollbar space-y-4">
-        
+
         {/* 길안내 버튼 */}
         <button
           onClick={onStartNavigation}
@@ -73,14 +73,16 @@ export function ShopDetailsPanel({
         </button>
 
         {/* 정보 박스들 */}
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
-          <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-widest">상세 위치</h4>
-          <p className="text-gray-800 font-semibold text-sm">{shop.section}</p>
+        {/* 정보 박스들 */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+            <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-widest">상세 위치</h4>
+            <p className="text-gray-800 font-semibold text-sm">{shop.section}</p>
         </div>
-
         <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
           <h4 className="text-[10px] font-bold text-gray-400 uppercase mb-1 tracking-widest">운영 정보</h4>
-          <p className="text-gray-800 font-semibold text-sm">{shop.hours || "08:00 - 19:00"}</p>
+            <p className="text-gray-800 font-semibold text-sm">{shop.hours || "08:00 - 19:00"}</p>
+        </div>
         </div>
       </div>
     </div>
