@@ -24,7 +24,7 @@ const MenuItemCard = ({ menu, isSearched }: MenuItemCardProps) => {
       onClick={handleAddToCart} // 카드 전체 클릭 시 장바구니 담기 (UX 개선 추천)
       className={`bg-[var(--color-indigo-100)] rounded-lg shadow hover:shadow-md transition-shadow duration-200 ease-in-out overflow-hidden flex flex-col cursor-pointer ${
         isSearched
-          ? 'animate-[pulse_1s_ease-in-out_5] border-2 border-[var(--color-indigo-300)] ring-2 ring-[var(--color-indigo-300)]'
+          ? 'animate-[pulse_1s_ease-in-out_infinite] border-2 border-[var(--color-indigo-300)] ring-2 ring-[var(--color-indigo-300)]'
           : ''
       }`}
     >

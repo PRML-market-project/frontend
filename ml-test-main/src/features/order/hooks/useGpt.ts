@@ -81,28 +81,33 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
 
     switch (intent) {
       case 'get_store':
-        updateLastMessage(chat_message);
-        getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
-        console.log('카테고리 탐색:', items);
-        if (items.length > 0) {
-          const { category_id, category_type, menu_id } = items[0] ?? {};
+  updateLastMessage(chat_message);
+  getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
 
-          // 1) 타입 먼저 적용
-          if (category_type) {
-            setCurrentCategoryType(category_type);
-          }
-          setCurrentView('menu');
+  if (items.length > 0) {
+    const { category_type } = items[0] ?? {};
 
-          // 2) 그 다음 카테고리 선택
-          if (category_id != null) {
-            setCurrentCategory(category_id);
-          }
-          // 3) 메뉴까지 지정되면 선택
-          if (menu_id != null) {
-            setCurrentMenu(menu_id);
-          }
-        }
-        break;
+    // 1) 상위 타입 선택 (예: 농산물)
+    if (category_type) {
+      setCurrentCategoryType(category_type);
+    }
+    setCurrentView('menu');
+
+    // 2) ✅ 관련된 모든 카테고리 ID 추출하여 깜빡임 설정
+    const categoryIds = items
+      .map(item => item.category_id)
+      .filter((id): id is number => id != null);
+
+    // navigationStore에 추가한 함수 호출
+    const { setHighlightedCategoryIds } = useNavigationStore.getState();
+    setHighlightedCategoryIds(categoryIds);
+
+    // 3) 그 중 최저가 가게(첫 번째 아이템)를 기본 선택
+    if (categoryIds.length > 0) {
+      setCurrentCategory(categoryIds[0]);
+    }
+  }
+  break;
 
       case 'get_menu':
         updateLastMessage(chat_message);

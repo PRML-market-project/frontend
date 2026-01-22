@@ -30,8 +30,8 @@ const LEGEND_Y = SVG_H - LEGEND_H - LEGEND_PAD;
 
 // ✅ 범례 스타일
 const LEGEND_RADIUS = 120;
-const LEGEND_TITLE_SIZE = 88;
-const LEGEND_SUBTITLE_SIZE = 32;
+const LEGEND_TITLE_SIZE = 110;
+const LEGEND_SUBTITLE_SIZE = 36;
 
 // ✅ 범례 내부 레이아웃
 const LEGEND_CENTER_X = LEGEND_W / 2;
