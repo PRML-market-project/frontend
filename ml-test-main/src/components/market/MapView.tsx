@@ -1,8 +1,6 @@
 // ===========================
 // MapView.tsx
-// - ✅ "대조시장 배치도" 범례처럼 SVG 내부에 팝업(overlay)을 고정 배치
-// - ✅ overlay(ShopDetailsPanel)의 실제 폭(420px)에 맞춰 foreignObject 사이즈 자동 계산
-//   → 범례(LEGEND)와 겹치지 않도록 POPUP_H를 LEGEND_Y 기준으로 자동 산출
+// - ✅ "대조시장 배치도" 범례 콘텐츠 위치 이동 (가로폭 유지, 내부 좌표 이동으로 중앙 정렬 효과)
 // ===========================
 import React, { useRef } from "react";
 import { Shop } from "@/types/shop";
@@ -12,7 +10,7 @@ interface MapViewProps {
   selectedShopId: string | null;
   onShopSelect: (shopId: string) => void;
   showNavigation: boolean;
-  overlay?: React.ReactNode; // ✅ SVG 내부에 넣을 팝업(ShopDetailsPanel 등)
+  overlay?: React.ReactNode;
 }
 
 // --- 상수 및 설정 ---
@@ -23,34 +21,50 @@ const TOP_CORRIDOR_Y = 290;
 const SVG_W = 2800;
 const SVG_H = 3600;
 
+// ✅ 범례(우측 하단 고정)
 const LEGEND_W = 1400;
 const LEGEND_H = 1300;
 const LEGEND_PAD = 80;
 const LEGEND_X = SVG_W - LEGEND_W - LEGEND_PAD;
 const LEGEND_Y = SVG_H - LEGEND_H - LEGEND_PAD;
 
+// ✅ 범례 스타일
 const LEGEND_RADIUS = 120;
 const LEGEND_TITLE_SIZE = 88;
 const LEGEND_SUBTITLE_SIZE = 32;
-const LEGEND_TITLE_Y = 160;
-const LEGEND_SUBTITLE_Y = 230;
 
-const LEGEND_ITEMS_START_Y = 350;
-const LEGEND_COL_GAP = 540;
-const LEGEND_ROW_GAP = 155;
-const LEGEND_LEFT_X = 130;
+// ✅ 범례 내부 레이아웃
+const LEGEND_CENTER_X = LEGEND_W / 2;
+
+// 타이틀 위치 (시각적 중앙을 위해 Y좌표 약간 하향 조정)
+const LEGEND_TITLE_Y = 200;
+const LEGEND_SUBTITLE_Y = 260;
+
+// 아이템 영역
+const LEGEND_ITEMS_START_Y = 400;
+const LEGEND_ROW_GAP = 160;
+
+// ✅ 그리드 설정 (가로폭 420 유지)
+const LEGEND_COL_WIDTH = 420;  // 요청대로 유지
+const LEGEND_GRID_GAP = 120;
+const LEGEND_GRID_TOTAL_W = LEGEND_COL_WIDTH * 2 + LEGEND_GRID_GAP;
+const LEGEND_GRID_START_X = (LEGEND_W - LEGEND_GRID_TOTAL_W) / 2;
+
+// ✅ 아이콘/텍스트 위치 이동 (offset)
+// 칸 너비(420) 안에서 내용물이 왼쪽으로 쏠려 보이므로,
+// 전체적으로 오른쪽으로 약 75px 밀어서 중앙에 위치한 것처럼 보이게 함
+const LEGEND_CONTENT_OFFSET_X = 75;
+
 const LEGEND_CIRCLE_R = 38;
-const LEGEND_LABEL_X = 100;
+const LEGEND_LABEL_X = 100; // 아이콘 기준 텍스트 거리
 const LEGEND_LABEL_SIZE = 56;
 
+// ✅ 팝업 배치
 const POPUP_W = LEGEND_W;
-
-const POPUP_BOTTOM_GAP = 80; // 범례와 팝업 사이 간격
-const POPUP_X = LEGEND_X;    // 범례와 X축 라인을 맞춤 (우측 정렬)
-
+const POPUP_BOTTOM_GAP = 80;
+const POPUP_X = LEGEND_X;
 const POPUP_H = 1100;
 const POPUP_Y = LEGEND_Y - POPUP_H - POPUP_BOTTOM_GAP;
-
 
 const categoryColors: Record<string, string> = {
   식당: "#FFEDD5",
@@ -100,11 +114,9 @@ export function MapView({
     if (!showNavigation || !selectedShop) return "";
     const pts: Array<{ x: number; y: number }> = [];
 
-    // 1) 키오스크 -> 메인 복도 (가로)
     pts.push({ x: KIOSK.guideX, y: KIOSK.guideY });
     pts.push({ x: MAIN_CORRIDOR_X, y: KIOSK.guideY });
 
-    // 2) 분기
     if (isWestSide(selectedShop)) {
       pts.push({ x: MAIN_CORRIDOR_X, y: TOP_CORRIDOR_Y });
       pts.push({ x: selectedShop.guideX, y: TOP_CORRIDOR_Y });
@@ -112,9 +124,7 @@ export function MapView({
       pts.push({ x: MAIN_CORRIDOR_X, y: selectedShop.guideY });
     }
 
-    // 3) 마지막: 상점 guide point로
     pts.push({ x: selectedShop.guideX, y: selectedShop.guideY });
-
     return pointsToPath(pts);
   };
 
@@ -125,7 +135,11 @@ export function MapView({
       ref={containerRef}
       className="relative h-full w-full bg-[#f0f2f5] overflow-hidden flex justify-center items-center"
     >
-      <svg viewBox="0 0 2800 3600" preserveAspectRatio="xMidYMid meet" className="block h-full w-auto">
+      <svg
+        viewBox="0 0 2800 3600"
+        preserveAspectRatio="xMidYMid meet"
+        className="block h-full w-auto"
+      >
         {/* 배경 및 도로 */}
         <rect x="0" y="0" width="2800" height="3600" fill="#e5e7eb" />
         <g fill="#ffffff" stroke="#cbd5e1" strokeWidth="2">
@@ -140,7 +154,9 @@ export function MapView({
             const centerX = shop.x + shop.width / 2;
             const centerY = shop.y + shop.height / 2;
 
-            const bgColor = isSelected ? "#FFFFFF" : categoryColors[shop.category] || "#F3F4F6";
+            const bgColor = isSelected
+              ? "#FFFFFF"
+              : categoryColors[shop.category] || "#F3F4F6";
             const borderColor = isSelected ? "#ef4444" : "#334155";
             const borderThickness = isSelected ? "12" : "1.5";
 
@@ -178,10 +194,16 @@ export function MapView({
                   {(() => {
                     const words = shop.name.split(" ");
                     const initialDy =
-                      words.length === 1 ? "0.14em" : `-${(words.length - 1) * 0.55}em`;
+                      words.length === 1
+                        ? "0.14em"
+                        : `-${(words.length - 1) * 0.55}em`;
 
                     return words.map((word, index) => (
-                      <tspan key={index} x={centerX} dy={index === 0 ? initialDy : "1.1em"}>
+                      <tspan
+                        key={index}
+                        x={centerX}
+                        dy={index === 0 ? initialDy : "1.1em"}
+                      >
                         {word}
                       </tspan>
                     ));
@@ -204,32 +226,66 @@ export function MapView({
               strokeLinejoin="round"
               strokeDasharray="40, 40"
             >
-              <animate attributeName="stroke-dashoffset" from="80" to="0" dur="1.2s" repeatCount="indefinite" />
+              <animate
+                attributeName="stroke-dashoffset"
+                from="80"
+                to="0"
+                dur="1.2s"
+                repeatCount="indefinite"
+              />
             </path>
-            <circle cx={selectedShop.guideX} cy={selectedShop.guideY} r="30" fill="#ef4444">
-              <animate attributeName="r" values="25;35;25" dur="1s" repeatCount="indefinite" />
+            <circle
+              cx={selectedShop.guideX}
+              cy={selectedShop.guideY}
+              r="30"
+              fill="#ef4444"
+            >
+              <animate
+                attributeName="r"
+                values="25;35;25"
+                dur="1s"
+                repeatCount="indefinite"
+              />
             </circle>
           </g>
         )}
 
         {/* 현위치 */}
-        <g transform={`translate(${KIOSK.x}, ${KIOSK.y})`} className="pointer-events-none">
+        <g
+          transform={`translate(${KIOSK.x}, ${KIOSK.y})`}
+          className="pointer-events-none"
+        >
           <circle r="120" fill="#3b82f6" fillOpacity="0.15">
-            <animate attributeName="r" values="110;130;110" dur="2s" repeatCount="indefinite" />
+            <animate
+              attributeName="r"
+              values="110;130;110"
+              dur="2s"
+              repeatCount="indefinite"
+            />
           </circle>
-          <rect width="220" height="110" x="-110" y="-55" rx="55" fill="#3b82f6" stroke="#ffffff" strokeWidth="4" />
-          <text y="5" textAnchor="middle" dominantBaseline="middle" fill="white" className="text-[40px] font-black">
+          <rect
+            width="220"
+            height="110"
+            x="-110"
+            y="-55"
+            rx="55"
+            fill="#3b82f6"
+            stroke="#ffffff"
+            strokeWidth="4"
+          />
+          <text
+            y="5"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fill="white"
+            className="text-[40px] font-black"
+          >
             현위치
           </text>
         </g>
 
-        {/* ✅ 범례(기존 스타일 유지) */}
+        {/* ✅ 범례 */}
         <g transform={`translate(${LEGEND_X}, ${LEGEND_Y})`} pointerEvents="none">
-          {/*
-          <rect x="18" y="26" width={LEGEND_W} height={LEGEND_H} rx={LEGEND_RADIUS} fill="#000" opacity="0.12" />
-          <rect x="10" y="16" width={LEGEND_W} height={LEGEND_H} rx={LEGEND_RADIUS} fill="#000" opacity="0.08" />
-          */}
-
           <rect
             width={LEGEND_W}
             height={LEGEND_H}
@@ -240,14 +296,23 @@ export function MapView({
             strokeWidth="3"
           />
 
-          <text x={120} y={LEGEND_TITLE_Y} textAnchor="start" fontSize={LEGEND_TITLE_SIZE} fontWeight={900} fill="#111827">
+          {/* 제목 */}
+          <text
+            x={LEGEND_CENTER_X}
+            y={LEGEND_TITLE_Y}
+            textAnchor="middle"
+            fontSize={LEGEND_TITLE_SIZE}
+            fontWeight={900}
+            fill="#111827"
+          >
             대조시장 배치도
           </text>
 
+          {/* 부제목 */}
           <text
-            x={120}
+            x={LEGEND_CENTER_X}
             y={LEGEND_SUBTITLE_Y}
-            textAnchor="start"
+            textAnchor="middle"
             fontSize={LEGEND_SUBTITLE_SIZE}
             fontWeight={800}
             fill="#9ca3af"
@@ -256,18 +321,23 @@ export function MapView({
             SHOP CATEGORIES
           </text>
 
+          {/* 아이템 리스트 */}
           {legendOrder.map((category, index) => {
             const color = categoryColors[category];
             const col = index % 2;
             const row = Math.floor(index / 2);
 
-            const x = LEGEND_LEFT_X + col * LEGEND_COL_GAP;
+            // 기존 그리드 시작점 계산
+            const x = LEGEND_GRID_START_X + col * (LEGEND_COL_WIDTH + LEGEND_GRID_GAP);
             const y = LEGEND_ITEMS_START_Y + row * LEGEND_ROW_GAP;
 
             return (
               <g key={category} transform={`translate(${x}, ${y})`}>
+                {/* ✅ 여기서 원과 텍스트의 X 좌표에 LEGEND_CONTENT_OFFSET_X(75px)를 더해줌
+                   칸(420px) 너비 변경 없이 내용물만 우측으로 이동 -> 중앙 정렬 효과
+                */}
                 <circle
-                  cx={LEGEND_CIRCLE_R}
+                  cx={LEGEND_CIRCLE_R + LEGEND_CONTENT_OFFSET_X}
                   cy={LEGEND_CIRCLE_R}
                   r={LEGEND_CIRCLE_R}
                   fill={color}
@@ -276,14 +346,14 @@ export function MapView({
                   strokeWidth="3"
                 />
                 <circle
-                  cx={LEGEND_CIRCLE_R - 10}
+                  cx={LEGEND_CIRCLE_R + LEGEND_CONTENT_OFFSET_X - 10}
                   cy={LEGEND_CIRCLE_R - 12}
                   r={LEGEND_CIRCLE_R - 18}
                   fill="#ffffff"
                   opacity="0.25"
                 />
                 <text
-                  x={LEGEND_LABEL_X}
+                  x={LEGEND_LABEL_X + LEGEND_CONTENT_OFFSET_X}
                   y={LEGEND_CIRCLE_R + 16}
                   textAnchor="start"
                   fontSize={LEGEND_LABEL_SIZE}
@@ -297,7 +367,7 @@ export function MapView({
           })}
         </g>
 
-        {/* ✅ SVG 내부 팝업(ShopDetailsPanel) - 폭/높이 자동 맞춤(범례와 안 겹치게) */}
+        {/* ✅ SVG 내부 팝업(ShopDetailsPanel) */}
         {overlay && (
           <foreignObject x={POPUP_X} y={POPUP_Y} width={POPUP_W} height={POPUP_H} pointerEvents="auto">
             <div
