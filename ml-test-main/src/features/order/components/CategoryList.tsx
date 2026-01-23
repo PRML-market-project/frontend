@@ -99,10 +99,10 @@ const CategoryList = () => {
           <button
             onClick={handleOrderHistoryClick}
             className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all outline-none focus:outline-none',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all outline-none focus:outline-none border',
               currentView === 'orderHistory'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-secondary text-secondary-foreground hover:bg-accent border border-border/50'
+                ? 'bg-primary text-primary-foreground border-transparent'
+                : 'bg-secondary text-secondary-foreground hover:bg-accent border-border/50'
             )}
           >
             <span>🗺️</span>
