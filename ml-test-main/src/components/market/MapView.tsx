@@ -330,7 +330,7 @@ export function MapView({
 
             // 기존 그리드 시작점 계산
             const x = LEGEND_GRID_START_X + col * (LEGEND_COL_WIDTH + LEGEND_GRID_GAP);
-            const y = LEGEND_ITEMS_START_Y + row * LEGEND_ROW_GAP;
+            const y = LEGEND_ITEMS_START_Y + row * LEGEND_ROW_GAP + 20;
 
             return (
               <g key={category} transform={`translate(${x}, ${y})`}>

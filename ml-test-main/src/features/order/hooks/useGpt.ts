@@ -192,7 +192,7 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
           if (shopInfo) {
             // ✅ 가게 정보를 찾았으면 메시지 생성 (GPT 메시지가 null이어도 여기서 생성됨)
             const josa = getJosa(shopInfo.name, '은', '는');
-            finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}번에 있어요.`;
+            finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}에 있어요.`;
 
             // 지도 이동 및 안내 시작
             setCurrentView('map');
