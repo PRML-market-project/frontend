@@ -4,6 +4,7 @@
 // ===========================
 import React, { useRef } from "react";
 import { Shop } from "@/types/shop";
+import { useMapStore } from "@/store/mapStore";
 
 interface MapViewProps {
   shops: Shop[];

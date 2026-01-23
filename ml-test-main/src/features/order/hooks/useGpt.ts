@@ -3,31 +3,34 @@ import { useChatStore } from '@/features/chat/store/chatStore';
 import { useCartStore } from '@/store/cartStore';
 import { useMenuStore } from '@/store/menuStore';
 import { useNavigationStore } from '@/store/navigationStore';
-import { useOrderStore } from '../store/orderStore';
+import { useOrderStore } from '@/features/order/store/orderStore';
 import { getSpeech } from '@/utils/getSpeech';
 import { useLanguageStore } from '@/store/languageStore';
 import { useParams } from 'react-router-dom';
 import { useOrderHistoryStore } from '@/store/orderHistoryStore';
-import { useMapStore } from '@/store/mapStore';
+import { useMapStore } from '@/store/mapStore'; // ✅ MapStore 추가
 import { marketShops } from '@/data/market-shops';
 
 interface UseTextApiProps {
   apiUrl: string;
 }
 
-// [수정] category_type 추가
 interface ResponseItem {
   menu_id?: number;
   category_id?: number;
-  category_type?: string; // 추가됨
+  category_type?: string;
   quantity?: number;
   state?: string;
   target_id?: string;
+  // get_total_price 계산 결과용 필드들
+  item_name?: string;
+  unit_price?: number;
+  total_price?: number;
 }
 
 interface TextApiResponse {
   user_message: string;
-  chat_message: string;
+  chat_message: string | null; // ✅ null 가능하도록 수정
   result: {
     status: string;
     intent: string;
@@ -40,20 +43,20 @@ interface TextApiResponse {
 export const useGpt = ({ apiUrl }: UseTextApiProps) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
   const { addMessage, updateLastMessage } = useChatStore();
-  const { categories, getMenusByCategory } = useMenuStore();
-  const { updateQuantity, removeItem, addItem } = useCartStore();
+  const { categories } = useMenuStore();
   const {
     setCurrentCategory,
     setCurrentMenu,
     setCurrentView,
     setCurrentCategoryType,
+    setHighlightedCategoryIds, // ✅ 스토어 액션 사용
   } = useNavigationStore();
-  const { setShowOrderModal } = useOrderStore();
-  const { clearCart, cartItems } = useCartStore();
+
   const { language } = useLanguageStore();
-  const { kioskId } = useParams();
-  const { fetchOrders } = useOrderHistoryStore();
+
+  // ✅ 지도 스토어에서 함수 가져오기
   const { selectAndNavigate } = useMapStore();
 
   const getJosa = (word: string, josa1: string, josa2: string) => {
@@ -67,120 +70,165 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
     items: ResponseItem[],
     admin_id: number,
     kiosk_id: number,
-    chat_message: string
+    chat_message: string | null // ✅ null 허용
   ) => {
+    // 디버깅용 로그
+    console.log('GPT Intent:', intent);
+    console.log('GPT Items:', items);
 
-    // 만약 items에 category_type이 있다면 여기서 활용 가능
-    // 예: console.log("가게 타입:", items[0]?.category_type);
+    // ✅ chat_message가 null일 경우 안전하게 빈 문자열 처리
+    const safeMessage = chat_message || '';
 
     if (!intent) {
-      updateLastMessage(chat_message);
-      getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+      if (safeMessage) {
+        updateLastMessage(safeMessage);
+        getSpeech(safeMessage, language === 'en' ? 'en' : 'ko');
+      }
       return;
     }
 
     switch (intent) {
+      // ---------------------------------------------------------
+      // 1. 가게(Category) 탐색
+      // ---------------------------------------------------------
       case 'get_store':
-  updateLastMessage(chat_message);
-  getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+        if (safeMessage) {
+          updateLastMessage(safeMessage);
+          getSpeech(safeMessage, language === 'en' ? 'en' : 'ko');
+        }
 
-  if (items.length > 0) {
-    const { category_type } = items[0] ?? {};
+        if (items.length > 0) {
+          const { category_type } = items[0] ?? {};
 
-    // 1) 상위 타입 선택 (예: 농산물)
-    if (category_type) {
-      setCurrentCategoryType(category_type);
-    }
-    setCurrentView('menu');
-
-    // 2) ✅ 관련된 모든 카테고리 ID 추출하여 깜빡임 설정
-    const categoryIds = items
-      .map(item => item.category_id)
-      .filter((id): id is number => id != null);
-
-    // navigationStore에 추가한 함수 호출
-    const { setHighlightedCategoryIds } = useNavigationStore.getState();
-    setHighlightedCategoryIds(categoryIds);
-
-    // 3) 그 중 최저가 가게(첫 번째 아이템)를 기본 선택
-    if (categoryIds.length > 0) {
-      setCurrentCategory(categoryIds[0]);
-    }
-  }
-  break;
-
-      case 'get_menu':
-  updateLastMessage(chat_message);
-  getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
-
-  if (items.length > 0) {
-    const { category_id, category_type, menu_id } = items[0] ?? {};
-
-    // 1) 뷰 모드 설정
-    setCurrentView('menu');
-
-    // 2) 카테고리 타입(대분류) 설정 (예: '청과', '정육')
-    if (category_type) {
-      setCurrentCategoryType(category_type);
-    }
-
-    // 3) 카테고리 ID(소분류/가게) 설정
-    // 숫자로 들어오는지 확인하고 Number()로 감싸주는 것이 안전합니다.
-    if (category_id != null) {
-      setCurrentCategory(Number(category_id));
-    }
-
-    // 4) 특정 메뉴 강조
-    if (menu_id != null) {
-      setCurrentMenu(Number(menu_id));
-    }
-  }
-  break;
-
-  case 'get_total_price':
-  // 1. AI가 계산한 상세 내역 및 총액 메시지를 채팅창에 업데이트
-  updateLastMessage(chat_message);
-
-  // 2. 해당 내용을 음성으로 안내
-  getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
-
-  // 3. (옵션) 채팅창에만 응답하므로 별도의 화면 이동(setCurrentView) 로직은 생략합니다.
-  console.log('총 가격 계산 응답 완료:', chat_message);
-  break;
-
-      // 위치 안내 처리
-      case 'get_location':
-        let finalMessage = chat_message;
-
-        console.log('위치 안내:', items);
-
-        if (items.length > 0 && items[0]?.target_id) {
-          const targetId = String(items[0].target_id);
-
-          const shopInfo = marketShops.find((s) => s.id === targetId);
-
-          if (shopInfo) {
-            const josa = getJosa(shopInfo.name, '은', '는');
-            finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}번에 있어요.`;
+          // 1) 뷰 및 대분류 설정
+          setCurrentView('menu');
+          if (category_type) {
+            setCurrentCategoryType(category_type);
           }
 
-          updateLastMessage(finalMessage);
-          getSpeech(finalMessage, language === 'en' ? 'en' : 'ko');
+          // 2) ✅ 관련된 모든 카테고리 ID 추출하여 깜빡임 설정
+          const categoryIds = items
+            .map((item) => item.category_id)
+            .filter((id): id is number => id != null);
 
-          setCurrentView('map');
-          selectAndNavigate(targetId);
-        } else {
-          updateLastMessage(chat_message);
-          getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+          setHighlightedCategoryIds(categoryIds);
+
+          // 3) 최저가(첫 번째) 가게 자동 선택
+          if (categoryIds.length > 0) {
+            setCurrentCategory(categoryIds[0]);
+          }
         }
         break;
 
+      // ---------------------------------------------------------
+      // 2. 메뉴(Menu) 탐색
+      // ---------------------------------------------------------
+      case 'get_menu':
+        if (safeMessage) {
+          updateLastMessage(safeMessage);
+          getSpeech(safeMessage, language === 'en' ? 'en' : 'ko');
+        }
+
+        if (items.length > 0) {
+          const { category_id, category_type, menu_id } = items[0] ?? {};
+
+          setCurrentView('menu');
+
+          if (category_type) {
+            setCurrentCategoryType(category_type);
+          }
+
+          if (category_id != null) {
+            setCurrentCategory(Number(category_id));
+          }
+
+          if (menu_id != null) {
+            setCurrentMenu(Number(menu_id));
+          }
+        }
+        break;
+
+      // ---------------------------------------------------------
+      // 3. 총 가격 계산 (get_total_price)
+      // ---------------------------------------------------------
+      case 'get_total_price':
+        // 1. 메시지 및 음성 안내
+        if (safeMessage) {
+          updateLastMessage(safeMessage);
+          getSpeech(safeMessage, language === 'en' ? 'en' : 'ko');
+        }
+
+        // 2. 언급된 상품이 있는 가게들을 깜빡이게 처리 (시각적 보조)
+        if (items && items.length > 0) {
+          // 화면을 메뉴판으로 이동 (선택 사항, 대화 집중하려면 제거 가능)
+          setCurrentView('menu');
+
+          // 첫 번째 아이템의 카테고리 타입으로 탭 전환
+          const { category_type } = items[0] ?? {};
+          if (category_type) setCurrentCategoryType(category_type);
+
+          // 관련된 모든 가게 ID 추출 및 깜빡임
+          const categoryIds = items
+            .map((item) => item.category_id)
+            .filter((id): id is number => id != null);
+
+          const uniqueIds = Array.from(new Set(categoryIds));
+          setHighlightedCategoryIds(uniqueIds);
+        }
+        console.log('총 가격 계산 완료:', safeMessage);
+        break;
+
+      // ---------------------------------------------------------
+      // 4. 위치/지도 안내 (get_location)
+      // ---------------------------------------------------------
+      case 'get_location':
+        // ✅ chat_message가 null이면 빈 문자열로 시작, 아래 로직에서 메시지 생성
+        let finalMessage = safeMessage;
+
+        if (items.length > 0 && items[0]?.target_id) {
+          const targetId = String(items[0].target_id);
+          const shopInfo = marketShops.find((s) => s.id === targetId);
+
+          if (shopInfo) {
+            // ✅ 가게 정보를 찾았으면 메시지 생성 (GPT 메시지가 null이어도 여기서 생성됨)
+            const josa = getJosa(shopInfo.name, '은', '는');
+            finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}번에 있어요.`;
+
+            // 지도 이동 및 안내 시작
+            setCurrentView('map');
+            selectAndNavigate(targetId);
+          } else {
+            // 가게 ID는 왔는데 데이터에 없는 경우
+            finalMessage =
+              language === 'en'
+                ? 'Shop location not found.'
+                : '가게 위치 정보를 찾을 수 없습니다.';
+          }
+        } else {
+          // items가 비어있을 때 메시지가 null이면 기본 메시지 출력
+          if (!finalMessage) {
+            finalMessage =
+              language === 'en'
+                ? 'I could not find that location.'
+                : '위치 정보를 찾을 수 없습니다.';
+          }
+        }
+
+        // 최종 메시지 출력 및 음성 안내
+        updateLastMessage(finalMessage);
+        getSpeech(finalMessage, language === 'en' ? 'en' : 'ko');
+        break;
+
+      // ---------------------------------------------------------
+      // 5. 그 외 (잡담 등)
+      // ---------------------------------------------------------
       default:
-        updateLastMessage(chat_message);
-        getSpeech(chat_message, language === 'en' ? 'en' : 'ko');
+        if (safeMessage) {
+          updateLastMessage(safeMessage);
+          getSpeech(safeMessage, language === 'en' ? 'en' : 'ko');
+        }
         break;
     }
-
   };
 
   const sendTextToApi = async (
@@ -188,9 +236,7 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
     admin_id: string,
     kiosk_id: string
   ): Promise<TextApiResponse> => {
-    if (!apiUrl) {
-      throw new Error('API URL이 설정되지 않았습니다.');
-    }
+    if (!apiUrl) throw new Error('API URL이 설정되지 않았습니다.');
 
     setIsProcessing(true);
     addMessage({
@@ -203,19 +249,11 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
     try {
       const response = await fetch(`${apiUrl}/gpt`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          admin_id: admin_id,
-          kiosk_id: kiosk_id,
-          text: text,
-        }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ admin_id, kiosk_id, text }),
       });
 
-      if (!response.ok) {
-        throw new Error('GPT 서버 응답 오류');
-      }
+      if (!response.ok) throw new Error('GPT 서버 응답 오류');
 
       const responseText = await response.text();
       let data: any;
@@ -223,19 +261,15 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
 
       try {
         data = JSON.parse(responseText);
-        if (data && typeof data === 'object') {
-          isJson = true;
-        }
+        if (data && typeof data === 'object') isJson = true;
       } catch (e) {
         isJson = false;
       }
 
       if (!isJson) {
-        console.log('Non-JSON Response received:', responseText);
-
+        console.log('Non-JSON Response:', responseText);
         updateLastMessage(responseText);
         getSpeech(responseText, language === 'en' ? 'en' : 'ko');
-
         return {
           user_message: text,
           chat_message: responseText,
@@ -249,9 +283,11 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
         };
       }
 
-      console.log('GPT Response:', data);
+      console.log('GPT Response JSON:', data);
 
-      if (data.chat_message) {
+      // ✅ 수정된 조건문: 인텐트가 있거나, 메시지가 있으면 처리
+      // (chat_message가 null이어도 intent가 있으면 processIntent 실행)
+      if (data.result && data.result.intent) {
         processIntent(
           data.result.intent,
           data.result.items,
@@ -259,10 +295,18 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
           data.result.kiosk_id,
           data.chat_message
         );
+      } else if (data.chat_message) {
+        // 인텐트는 없지만 메시지는 있는 경우 (잡담 등)
+        processIntent(
+          '',
+          [],
+          data.result?.admin_id || 0,
+          data.result?.kiosk_id || 0,
+          data.chat_message
+        );
       }
 
       return data as TextApiResponse;
-
     } catch (err) {
       console.error('Error sending text:', err);
       const errorMessage =
