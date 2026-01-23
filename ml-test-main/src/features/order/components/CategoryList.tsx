@@ -13,7 +13,7 @@ const CategoryList = () => {
     setCurrentMenu,
     currentCategoryType,
     setCurrentCategoryType,
-    highlightedCategoryIds, // ✅ 스토어에서 가져옴
+    highlightedCategoryIds,
   } = useNavigationStore();
 
   const { categories } = useMenuStore();
@@ -46,12 +46,10 @@ const CategoryList = () => {
     setCurrentView('menu');
 
     if (currentCategoryType === type) {
-      // ✅ 닫을 때 모든 하위 선택 및 강조 해제
       setCurrentCategoryType(null);
       setCurrentCategory(null);
       setCurrentMenu(null);
     } else {
-      // 바꿀 때도 초기화
       setCurrentMenu(null);
       setCurrentCategoryType(type);
       setCurrentCategory(null);
@@ -98,8 +96,9 @@ const CategoryList = () => {
         <div className='flex-none flex items-center pl-2 pr-4 py-3 bg-background/95 border-l border-border/50 self-stretch'>
           <button
             onClick={handleOrderHistoryClick}
+            // 👇 수정됨: transition-all 제거
             className={clsx(
-              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold transition-all outline-none focus:outline-none border',
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold outline-none focus:outline-none border',
               currentView === 'orderHistory'
                 ? 'bg-primary text-primary-foreground border-transparent'
                 : 'bg-secondary text-secondary-foreground hover:bg-accent border-border/50'
@@ -121,7 +120,6 @@ const CategoryList = () => {
                 currentView === 'menu' &&
                 category.categoryId === currentCategoryId;
 
-              // ✅ 깜빡임 여부 확인
               const isHighlighted = highlightedCategoryIds.includes(
                 category.categoryId
               );
@@ -140,7 +138,6 @@ const CategoryList = () => {
                     isActive
                       ? 'bg-[var(--color-indigo-500)] text-white border-[var(--color-indigo-600)]'
                       : 'bg-card text-card-foreground border-border hover:bg-accent hover:text-accent-foreground',
-                    // ✅ 깜빡임 애니메이션 적용
                     isHighlighted &&
                       'animate-[pulse_1s_ease-in-out_infinite] ring-2 ring-indigo-400 border-indigo-500 shadow-sm'
                   )}
