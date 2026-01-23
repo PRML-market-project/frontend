@@ -68,8 +68,10 @@ const CategoryList = () => {
 
   return (
     <div className='sticky top-0 z-20 w-full bg-background/95 backdrop-blur-md border-b border-border'>
-      {/* 상단: 타입 리스트 + 지도 버튼 */}
-      <div className='flex items-start w-full border-b border-border/40'>
+      {/* 수정 1: items-start -> items-center
+        (전체 행을 세로 중앙 정렬하여 높이 차이로 인한 치우침 방지)
+      */}
+      <div className='flex items-center w-full border-b border-border/40'>
         <div className='flex-1'>
           <nav className='flex flex-wrap items-center px-4'>
             {categoryTypes.map((type) => {
@@ -80,10 +82,12 @@ const CategoryList = () => {
                   key={type}
                   onClick={() => handleTypeClick(type)}
                   className={clsx(
-                    'py-3 mr-4 text-sm font-bold whitespace-nowrap transition-all duration-200 border-b-2 outline-none focus:outline-none',
+                    // 수정 2: border-t-2 border-t-transparent 추가
+                    // (하단 border-b-2와 균형을 맞춰 텍스트를 물리적 중앙으로 밀어줌)
+                    'py-3 mr-4 text-sm font-bold whitespace-nowrap transition-all duration-200 border-b-2 border-t-2 border-t-transparent outline-none focus:outline-none',
                     isActive
-                      ? 'border-[var(--color-indigo-500)] text-[var(--color-indigo-600)]'
-                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                      ? 'border-b-[var(--color-indigo-500)] text-[var(--color-indigo-600)]'
+                      : 'border-b-transparent text-muted-foreground hover:text-foreground'
                   )}
                 >
                   {type}
@@ -96,7 +100,6 @@ const CategoryList = () => {
         <div className='flex-none flex items-center pl-2 pr-4 py-3 bg-background/95 border-l border-border/50 self-stretch'>
           <button
             onClick={handleOrderHistoryClick}
-            // 👇 수정됨: transition-all 제거
             className={clsx(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold outline-none focus:outline-none border',
               currentView === 'orderHistory'
