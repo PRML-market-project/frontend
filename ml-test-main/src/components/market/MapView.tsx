@@ -68,10 +68,10 @@ const POPUP_H = 1100;
 const POPUP_Y = LEGEND_Y - POPUP_H - POPUP_BOTTOM_GAP;
 
 const categoryColors: Record<string, string> = {
+  청과: "#DCFCE7",
   식당: "#FFEDD5",
   정육: "#FEE2E2",
   수산: "#DBEAFE",
-  청과: "#DCFCE7",
   식품: "#FEF9C3",
   "농산물 가공": "#E7DED0",
   잡화: "#EDE9FE",
@@ -90,14 +90,14 @@ function pointsToPath(points: Array<{ x: number; y: number }>) {
 }
 
 const legendOrder: Array<keyof typeof categoryColors> = [
-  "식당",
-  "정육",
+    "청과",
+      "정육",
+    "식당",
   "수산",
-  "청과",
-  "식품",
+      "잡화",
   "농산물 가공",
-  "잡화",
   "서비스업",
+      "식품",
   "공실",
 ];
 
