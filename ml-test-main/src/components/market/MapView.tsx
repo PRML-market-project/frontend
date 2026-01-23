@@ -159,7 +159,7 @@ export function MapView({
               ? "#FFFFFF"
               : categoryColors[shop.category] || "#F3F4F6";
             const borderColor = isSelected ? "#ef4444" : "#334155";
-            const borderThickness = isSelected ? "12" : "1.5";
+            const borderThickness = isSelected ? "6" : "1.5";
 
             return (
               <g
