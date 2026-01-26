@@ -5,39 +5,39 @@
 
 @theme {
   /* White & Ivory Custom Palette */
-  --color-ml-yellow: #F5E6CA; /* Creamy Yellow (Ivory tint) */
-  --color-ml-yellow-light: #FFF8E1; /* Very Light Cream */
-  --color-ml-gray: #F5F5F0; /* Warm White Gray */
-  --color-ml-cart-light-yellow: #FEFCF5; /* Almost white ivory for cart bg */
+  --color-ml-yellow: #F5E6CA;
+  --color-ml-yellow-light: #FFF8E1;
+  --color-ml-gray: #F5F5F0;
+  --color-ml-cart-light-yellow: #FEFCF5;
 
   /* Map colors - Light/Ivory Map Style */
-  --color-map-bg: #F9F8F6; /* Soft Ivory Background */
+  --color-map-bg: #F9F8F6;
   --color-map-border-light: #E5E0D8;
   --color-map-border: #D6D3CD;
-  --color-map-white: #FFFFFF; /* White cards on ivory map */
-  --color-map-shop-selected: #D4C4A8; /* Sand Gold Selected */
-  --color-map-shop-selected-stroke: #A89B85; /* Darker Sand Stroke */
+  --color-map-white: #FFFFFF;
+  --color-map-shop-selected: #D4C4A8;
+  --color-map-shop-selected-stroke: #A89B85;
   --color-map-shop-stroke: #E5E5E5;
-  --color-map-text-gray: #78716C; /* Warm Gray text */
-  --color-map-destination: #E11D48; /* Soft Red */
-  --color-map-current-location: #3F3F46; /* Dark Warm Gray */
+  --color-map-text-gray: #78716C;
+  --color-map-destination: #E11D48;
+  --color-map-current-location: #3F3F46;
 
-  /* Sand/Beige gradient colors (Replaces Indigo/Gold) */
-  --color-indigo-shadow: rgba(212, 196, 168, 0.4); /* Sand Shadow */
-  --color-indigo-gradient-start: #E6DBC4; /* Light Beige */
-  --color-indigo-gradient-end: #Cfb898; /* Sand/Tan */
-  --color-shadow-black: rgba(60, 50, 40, 0.08); /* Soft Brown Shadow */
+  /* Sand/Beige gradient colors */
+  --color-indigo-shadow: rgba(212, 196, 168, 0.4);
+  --color-indigo-gradient-start: #E6DBC4;
+  --color-indigo-gradient-end: #Cfb898;
+  --color-shadow-black: rgba(60, 50, 40, 0.08);
 
   /* Chat colors */
   --color-chat-shadow: rgba(210, 200, 180, 0.2);
   --color-chat-border: rgba(210, 200, 180, 0.4);
 
-  /* Color Palette Overrides for Soft Warm Tones */
+  /* Color Palette Overrides */
   --color-indigo-50: oklch(0.99 0.01 90);
   --color-indigo-100: oklch(0.97 0.02 90);
-  --color-indigo-500: oklch(0.80 0.08 90); /* Sand Gold */
+  --color-indigo-500: oklch(0.80 0.08 90);
   --color-indigo-600: oklch(0.70 0.10 90);
-  --color-indigo-900: oklch(0.30 0.05 90); /* Deep Brown */
+  --color-indigo-900: oklch(0.30 0.05 90);
 }
 
 @keyframes custom-blink {
@@ -107,49 +107,43 @@
   --color-sidebar-ring: var(--sidebar-ring);
 }
 
-/* LIGHT MODE: White & Ivory (Main Theme)
-   Clean, Warm, Minimalist
-*/
+/* LIGHT MODE */
 :root {
-  --radius: 0.75rem; /* Slightly softer radius */
+  --radius: 0.75rem;
 
-  /* Warm White / Ivory Backgrounds */
-  --background: oklch(0.99 0.005 95); /* Soft Ivory White */
-  --foreground: oklch(0.25 0.02 90); /* Dark Warm Brown/Gray */
+  --background: oklch(0.99 0.005 95);
+  --foreground: oklch(0.25 0.02 90);
   --defaultimage-matte: #ede8df;
 
-  --card: oklch(1 0 0); /* Pure White for cards to pop against ivory bg */
+  --card: oklch(1 0 0);
   --card-foreground: oklch(0.25 0.02 90);
 
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.25 0.02 90);
 
-  /* Primary: Soft Sand/Gold */
-  --primary: oklch(0.78 0.08 90); /* Warm Sand/Beige */
-  --primary-foreground: oklch(0.25 0.02 90); /* Dark text on light primary */
+  --primary: oklch(0.78 0.08 90);
+  --primary-foreground: oklch(0.25 0.02 90);
 
-  /* Secondary: Very Light Beige */
   --secondary: oklch(0.96 0.01 90);
   --secondary-foreground: oklch(0.35 0.03 90);
 
   --muted: oklch(0.96 0.01 90);
-  --muted-foreground: oklch(0.60 0.02 90); /* Soft Warm Gray */
+  --muted-foreground: oklch(0.60 0.02 90);
 
-  --accent: oklch(0.94 0.02 90); /* Slightly darker ivory for hovers */
+  --accent: oklch(0.94 0.02 90);
   --accent-foreground: oklch(0.25 0.02 90);
 
-  --destructive: oklch(0.65 0.18 25); /* Soft Red */
+  --destructive: oklch(0.65 0.18 25);
 
-  --border: oklch(0.92 0.01 90); /* Very subtle beige border */
+  --border: oklch(0.92 0.01 90);
   --input: oklch(0.92 0.01 90);
-  --ring: oklch(0.80 0.06 90); /* Sand Ring */
+  --ring: oklch(0.80 0.06 90);
 
-  /* Charts: Earthy Tones */
-  --chart-1: oklch(0.78 0.08 90); /* Sand */
-  --chart-2: oklch(0.65 0.10 60); /* Terracotta */
-  --chart-3: oklch(0.80 0.12 100); /* Soft Yellow */
-  --chart-4: oklch(0.70 0.08 140); /* Sage Green */
-  --chart-5: oklch(0.60 0.04 90); /* Taupe */
+  --chart-1: oklch(0.78 0.08 90);
+  --chart-2: oklch(0.65 0.10 60);
+  --chart-3: oklch(0.80 0.12 100);
+  --chart-4: oklch(0.70 0.08 140);
+  --chart-5: oklch(0.60 0.04 90);
 
   --sidebar: oklch(0.99 0.005 95);
   --sidebar-foreground: oklch(0.25 0.02 90);
@@ -160,12 +154,12 @@
   --sidebar-border: oklch(0.92 0.01 90);
   --sidebar-ring: oklch(0.80 0.06 90);
 
-  --map-bg: #0b1220;          /* 바닥(어두운) */
-  --map-surface: #0f1b2d;     /* 보드/패널 */
-  --map-hall: #f4f6fb;        /* 통로(밝은) */
+  --map-bg: #0b1220;
+  --map-surface: #0f1b2d;
+  --map-hall: #f4f6fb;
   --map-hall-stroke: #d7ddea;
 
-  --map-shop: #ffffff;        /* 상점 카드 */
+  --map-shop: #ffffff;
   --map-shop-stroke: #c8d0e0;
   --map-shop-text: #1f2937;
 
@@ -180,20 +174,18 @@
   --map-you-glow: rgba(245,158,11,0.35);
 }
 
-/* DARK MODE: Warm Deep Brown / Mocha (To complement Ivory)
-   Instead of pure black, use deep warm grays/browns
-*/
+/* DARK MODE */
 .dark {
-  --background: oklch(0.18 0.01 90); /* Deep Warm Gray/Brown */
-  --foreground: oklch(0.96 0.01 90); /* Ivory Text */
+  --background: oklch(0.18 0.01 90);
+  --foreground: oklch(0.96 0.01 90);
 
-  --card: oklch(0.22 0.01 90); /* Lighter Warm Gray */
+  --card: oklch(0.22 0.01 90);
   --card-foreground: oklch(0.96 0.01 90);
 
   --popover: oklch(0.22 0.01 90);
   --popover-foreground: oklch(0.96 0.01 90);
 
-  --primary: oklch(0.78 0.08 90); /* Same Sand/Gold pops well on dark */
+  --primary: oklch(0.78 0.08 90);
   --primary-foreground: oklch(0.18 0.01 90);
 
   --secondary: oklch(0.28 0.02 90);
@@ -234,7 +226,15 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* vmin 기반(짧은 변 기준) 전역 스케일 */
   html {
-    font-size: 120%;
+    /*
+      - 최소 16px (너무 작아지는 것 방지)
+      - 가운데 값: vmin(짧은 변 %) 기반으로 자연스럽게 스케일
+      - 최대 28px (너무 커지는 것 방지)
+      필요하면 28px을 30~34px로 올리면 50"에서 더 커짐
+    */
+    font-size: clamp(16px, 1.2vmin + 10px, 48px);
   }
 }
