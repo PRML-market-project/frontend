@@ -49,7 +49,8 @@ export const getSpeech = async (text: any, language: 'ko' | 'en' = 'ko') => {
     const audio = new Audio(audioUrl);
     currentAudio = audio;
 
-    audio.volume = 0.14; //볼륨
+    audio.volume = 0.1; //볼륨
+    audio.playbackRate = 1.5;//말 속도
 
     // 재생 완료 시 URL 해제
     audio.onended = () => {
@@ -99,6 +100,7 @@ function fallbackToBrowserTTS(text: string, language: 'ko' | 'en') {
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang;
   utterance.volume = 0.375;
+  utterance.rate = 1.5;
 
   window.speechSynthesis.speak(utterance);
 }
