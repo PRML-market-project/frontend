@@ -69,9 +69,9 @@ const POPUP_Y = LEGEND_Y - POPUP_H - POPUP_BOTTOM_GAP;
 
 const categoryColors: Record<string, string> = {
   청과: "#DCFCE7",
-  식당: "#FFEDD5",
   정육: "#FEE2E2",
   수산: "#DBEAFE",
+  식당: "#FFEDD5",
   식품: "#FEF9C3",
   "농산물 가공": "#E7DED0",
   잡화: "#EDE9FE",
@@ -92,8 +92,8 @@ function pointsToPath(points: Array<{ x: number; y: number }>) {
 const legendOrder: Array<keyof typeof categoryColors> = [
     "청과",
       "정육",
-    "식당",
   "수산",
+  "식당",
       "잡화",
   "농산물 가공",
   "서비스업",
@@ -111,23 +111,42 @@ export function MapView({
   const containerRef = useRef<HTMLDivElement>(null);
   const selectedShop = shops.find((s) => s.id === selectedShopId);
 
-  const getPathData = () => {
-    if (!showNavigation || !selectedShop) return "";
-    const pts: Array<{ x: number; y: number }> = [];
+const getPathData = () => {
+  if (!showNavigation || !selectedShop) return "";
 
-    pts.push({ x: KIOSK.guideX, y: KIOSK.guideY });
-    pts.push({ x: MAIN_CORRIDOR_X, y: KIOSK.guideY });
+  const pts: Array<{ x: number; y: number }> = [];
 
-    if (isWestSide(selectedShop)) {
-      pts.push({ x: MAIN_CORRIDOR_X, y: TOP_CORRIDOR_Y });
-      pts.push({ x: selectedShop.guideX, y: TOP_CORRIDOR_Y });
-    } else {
-      pts.push({ x: MAIN_CORRIDOR_X, y: selectedShop.guideY });
-    }
+  const shopIdNum = Number(selectedShop.id);
+  const useBottomRoute = [3, 5, 6].includes(shopIdNum);
 
+  // 시작: 키오스크
+  pts.push({ x: KIOSK.guideX, y: KIOSK.guideY });
+
+  // 메인 세로 복도로 이동
+  pts.push({ x: MAIN_CORRIDOR_X, y: KIOSK.guideY });
+
+  // 특정 ID는 하단 경로 강제
+  if (useBottomRoute) {
+    pts.push({ x: MAIN_CORRIDOR_X, y: 3550 }); // 세로 도로 하단
+    pts.push({ x: 840, y: 3550 });             // 가로 이동
+    pts.push({ x: 840, y: selectedShop.guideY });
     pts.push({ x: selectedShop.guideX, y: selectedShop.guideY });
-    return pointsToPath(pts);
-  };
+  }
+  // 기존 서측 로직
+  else if (isWestSide(selectedShop)) {
+    pts.push({ x: MAIN_CORRIDOR_X, y: TOP_CORRIDOR_Y });
+    pts.push({ x: selectedShop.guideX, y: TOP_CORRIDOR_Y });
+  }
+  // 일반 동측
+  else {
+    pts.push({ x: MAIN_CORRIDOR_X, y: selectedShop.guideY });
+  }
+
+  // 도착
+  pts.push({ x: selectedShop.guideX, y: selectedShop.guideY });
+
+  return pointsToPath(pts);
+};
 
   const fontSizeClass = "text-[36px]";
 
