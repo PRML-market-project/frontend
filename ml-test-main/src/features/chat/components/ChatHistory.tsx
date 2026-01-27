@@ -1,3 +1,4 @@
+// ChatHistory.tsx
 import { useChatStore } from '../store/chatStore';
 import ChatBubble from './ChatBubble';
 import { useEffect, useRef, useCallback } from 'react';
@@ -8,29 +9,32 @@ import { useVoiceStore } from '@/features/order/store/voiceStore';
 const ChatHistory = () => {
   const messages = useChatStore((state) => state.messages);
   const isCapturing = useChatStore((state) => state.isCapturing);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const { language } = useLanguageStore();
 
-  /**
-   * 아래 4개/5개는 voiceStore에 있어야 하는 액션/상태 이름입니다.
-   * (이미 비슷한게 있으면 그 이름으로 바꿔 끼우면 됨)
-   */
+  const scrollerRef = useRef<HTMLDivElement>(null);
+
   const {
     isCovered,
-    isMicOn, // boolean: 현재 마이크 ON/OFF
-    startHotwordDetection, // () => Promise<void> | void
-    stopHotwordDetection, // () => void
-    startMic, // (opts?: { lang?: 'ko'|'en' }) => Promise<void> | void
-    stopMic, // () => void
+    isMicOn,
+    stopHotwordDetection,
+    stopMic,
   } = useVoiceStore();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  // ✅ 정석: 스크롤 컨테이너의 scrollTop을 직접 조절
+  const scrollToBottom = useCallback((smooth = false) => {
+    const el = scrollerRef.current;
+    if (!el) return;
 
+    el.scrollTo({
+      top: el.scrollHeight,
+      behavior: smooth ? 'smooth' : 'auto',
+    });
+  }, []);
+
+  // ✅ 새 메시지가 "추가될 때" 1번 내려줌
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    scrollToBottom(false);
+  }, [messages.length, scrollToBottom]);
 
   // 언어 바뀔 때 TTS 테스트
   useEffect(() => {
@@ -47,9 +51,8 @@ const ChatHistory = () => {
       console.error('TTS test failed:', error);
     }
   }, [language, isCovered]);
-  /**
-   * 화면 덮힘(예: 주문 플로우/모달 등) 상태면 자동으로 마이크/감지 끄기
-   */
+
+  // 화면 덮힘 상태면 자동으로 마이크/감지 끄기
   useEffect(() => {
     if (!isCovered) return;
     if (!isMicOn) return;
@@ -58,10 +61,15 @@ const ChatHistory = () => {
     stopHotwordDetection?.();
   }, [isCovered, isMicOn, stopMic, stopHotwordDetection]);
 
+  const lastMsg = messages[messages.length - 1];
+  const shouldAutoFollow =
+    !!lastMsg && !lastMsg.isUser && lastMsg.text !== 'loading';
+
   return (
     <div className="flex flex-col h-full relative">
       <div
-        className="flex-1 p-4 overflow-y-auto bg-[var(--color-indigo-50)] rounded-lg"
+        ref={scrollerRef}
+        className="flex-1 px-4 pt-3 pb-1 overflow-y-auto bg-[var(--color-indigo-50)] rounded-lg"
         style={{
           boxShadow: '0 8px 16px var(--color-chat-shadow)',
           border: '1px solid var(--color-chat-border)',
@@ -75,22 +83,33 @@ const ChatHistory = () => {
                 : '안녕하세요! 어떤 도움이 필요하신가요?'
             }
             isUser={false}
+            // ✅ 초기 안내도 타이핑이면 따라가게
+            onTyping={() => scrollToBottom(false)}
+            autoFollow={true}
           />
         ) : (
-          messages.map((message, index) => (
-            <ChatBubble
-              key={index}
-              message={message.text}
-              isUser={message.isUser}
-              isUpdating={
-                message.isUser && index === messages.length - 1 && isCapturing
-              }
-            />
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+          messages.map((message, index) => {
+            const isLast = index === messages.length - 1;
+            const autoFollow = isLast && shouldAutoFollow;
 
+            return (
+              <ChatBubble
+                key={index}
+                message={message.text}
+                isUser={message.isUser}
+                isUpdating={
+                  message.isUser && isLast && isCapturing
+                }
+                // ✅ 정석: 타이핑(글자 추가) 때마다 바닥으로
+                onTyping={() => {
+                  if (autoFollow) scrollToBottom(false);
+                }}
+                autoFollow={autoFollow}
+              />
+            );
+          })
+        )}
+      </div>
     </div>
   );
 };

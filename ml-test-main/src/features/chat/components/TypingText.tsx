@@ -1,31 +1,21 @@
+// TypingText.tsx
 import { useEffect, useState } from 'react';
 
 interface TypingTextProps {
   text: string;
   speed: number; // 각 글자가 나타나는 시간 간격 (ms)
   fadeDuration?: number; // 각 글자의 페이드 인 애니메이션 지속 시간 (ms)
+  onTick?: () => void; // ✅ 글자 추가될 때 호출
 }
 
 const TypingText = ({
   text,
   speed,
-  fadeDuration = 200, // 기본 페이드 인 지속 시간을 200ms로 늘려 더 부드럽게
+  fadeDuration = 200,
+  onTick,
 }: TypingTextProps) => {
   const [displayedChars, setDisplayedChars] = useState<string[]>([]);
   const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    if (index < text.length) {
-      const timeout = setTimeout(() => {
-        // 현재 문자가 공백이면 &nbsp;로 변환하여 추가합니다.
-        const charToAdd =
-          text.charAt(index) === ' ' ? '\u00A0' : text.charAt(index); // '\u00A0'는 &nbsp;의 유니코드 표현
-        setDisplayedChars((prev) => [...prev, charToAdd]);
-        setIndex((prev) => prev + 1);
-      }, speed);
-      return () => clearTimeout(timeout);
-    }
-  }, [index, text, speed]);
 
   // text prop이 변경될 때 상태 초기화
   useEffect(() => {
@@ -33,22 +23,36 @@ const TypingText = ({
     setIndex(0);
   }, [text]);
 
+  useEffect(() => {
+    if (index >= text.length) return;
+
+    const timeout = window.setTimeout(() => {
+      const charToAdd =
+        text.charAt(index) === ' ' ? '\u00A0' : text.charAt(index);
+
+      setDisplayedChars((prev) => [...prev, charToAdd]);
+      setIndex((prev) => prev + 1);
+
+      // ✅ 정석: 글자 하나 추가될 때마다 콜백
+      onTick?.();
+    }, speed);
+
+    return () => window.clearTimeout(timeout);
+  }, [index, text, speed, onTick]);
+
   return (
-    <span className='text-sm'>
+    <span className="text-sm whitespace-pre-wrap">
       {displayedChars.map((char, charIdx) => (
         <span
           key={charIdx}
-          className='inline-block animate-fadeIn' // Tailwind CSS 애니메이션 클래스
+          className="inline-block animate-fadeIn"
           style={{
             animationDuration: `${fadeDuration}ms`,
-            animationTimingFunction: 'ease-out', // 부드러운 감속 효과
+            animationTimingFunction: 'ease-out',
           }}
-          // dangerouslySetInnerHTML을 사용하여 &nbsp;가 올바르게 렌더링되도록 합니다.
           dangerouslySetInnerHTML={{ __html: char }}
         />
       ))}
-      {/* Tailwind CSS 애니메이션은 이전과 동일하게 외부에서 정의하거나,
-          스타일드 컴포넌트 등으로 처리할 수 있습니다. */}
     </span>
   );
 };
