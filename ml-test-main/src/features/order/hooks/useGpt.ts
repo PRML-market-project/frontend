@@ -196,6 +196,9 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
 
             // 지도 이동 및 안내 시작
             setCurrentView('orderHistory');
+            setCurrentCategoryType(null);
+            setCurrentCategory(null);
+            setCurrentMenu(null);
             selectAndNavigate(targetId);
           } else {
             // 가게 ID는 왔는데 데이터에 없는 경우
