@@ -63,6 +63,7 @@ const CategoryList = () => {
       setCurrentView('orderHistory');
       setCurrentCategoryType(null);
       setCurrentCategory(null);
+      setCurrentMenu(null);
     }
   };
 
