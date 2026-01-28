@@ -195,7 +195,7 @@ export const useGpt = ({ apiUrl }: UseTextApiProps) => {
             finalMessage = `${shopInfo.name}${josa} ${shopInfo.section} ${shopInfo.number}에 있어요.`;
 
             // 지도 이동 및 안내 시작
-            setCurrentView('map');
+            setCurrentView('orderHistory');
             selectAndNavigate(targetId);
           } else {
             // 가게 ID는 왔는데 데이터에 없는 경우
