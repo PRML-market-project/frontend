@@ -48,7 +48,7 @@ const MainLayout = () => {
 
       {/* 4) 채팅+음성 - 불투명 */}
       <div className="flex-shrink-0 flex gap-2 p-2 border-t border-border bg-background z-50">
-        <div className="flex-1 bg-[var(--color-blue-100)] rounded-xl overflow-hidden min-h-[120px] max-h-[150px]">
+        <div className="flex-1 bg-[var(--color-blue-100)] rounded-xl overflow-hidden h-[150x]">
           <ChatHistory />
         </div>
         <div className="flex-shrink-0">

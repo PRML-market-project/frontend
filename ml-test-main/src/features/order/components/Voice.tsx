@@ -191,44 +191,8 @@ const Voice = () => {
             {isMicOn ? '■' : '🎤'}
           </button>
 
-          {import.meta.env.DEV && (
-            <div className="w-full max-w-[200px] flex-shrink-0">
-              <div className="p-2 rounded-lg border border-[var(--color-indigo-200)] bg-white text-left shadow-sm">
-                <div className="text-[10px] text-[var(--color-indigo-700)] mb-1 font-semibold">Developer Input</div>
-                <div className="flex gap-2">
-                  <textarea
-                    className="flex-1 p-2 border rounded-md text-sm resize-none focus:outline-[var(--color-indigo-500)] bg-[var(--color-indigo-50)]"
-                    rows={1}
-                    placeholder="입력..."
-                    value={devInput}
-                    onChange={(e) => setDevInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.nativeEvent.isComposing) return;
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        const text = devInput.trim();
-                        if (!text) return;
-                        setDevInput('');
-                        runDevAsIfWebSpeech(text);
-                      }
-                    }}
-                  />
-                  <button
-                    className="px-3 rounded-md bg-[var(--color-indigo-600)] text-white text-sm hover:bg-[var(--color-indigo-700)] font-bold whitespace-nowrap"
-                    disabled={isSendingRef.current}
-                    onClick={() => {
-                      const text = devInput.trim();
-                      if (!text) return;
-                      setDevInput('');
-                      runDevAsIfWebSpeech(text);
-                    }}
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+
+
         </>
       )}
     </div>
