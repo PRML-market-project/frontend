@@ -66,7 +66,7 @@ const ChatHistory = () => {
     !!lastMsg && !lastMsg.isUser && lastMsg.text !== 'loading';
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="flex flex-col h-full relative">
       <div
         ref={scrollerRef}
         className="flex-1 px-4 pt-3 pb-1 overflow-y-auto bg-[var(--color-indigo-50)] rounded-lg"
