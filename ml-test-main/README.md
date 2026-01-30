@@ -1,4 +1,4 @@
-# Mallang Order - 음성 주문 시스템 / Voice Order System
+# 음성인식 기반 키오스크 시스템
 
 ![React](https://img.shields.io/badge/React-19.0.0-blue)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7.2-blue)
@@ -9,12 +9,11 @@
 
 ### 프로젝트 개요
 
-Mallang Order는 음성 인식 기술을 활용한 주문 시스템입니다. React와 TypeScript를 기반으로 개발되었으며, Vite를 사용하여 빠른 개발 환경을 제공합니다.
+음성 인식 기술을 활용한 안내 키오스크 시스템입니다. React와 TypeScript를 기반으로 개발되었으며, Vite를 사용하여 빠른 개발 환경을 제공합니다.
 
 ### 주요 기능
 
-- 음성 인식 기반 주문 시스템
-- 실시간 주문 처리
+- 음성 인식 기반 정보 제공 키오스크 시스템
 - 반응형 UI 디자인
 - 직관적인 사용자 인터페이스
 
@@ -60,64 +59,6 @@ npm run build
 - TypeScript
 - ESLint
 
----
-
-## 🇺🇸 English
-
-### Project Overview
-
-Mallang Order is a voice recognition-based ordering system. Built with React and TypeScript, it provides a fast development environment using Vite.
-
-### Key Features
-
-- Voice recognition-based ordering system
-- Real-time order processing
-- Responsive UI design
-- Intuitive user interface
-
-### Tech Stack
-
-- **Frontend**: React 19, TypeScript
-- **Styling**: TailwindCSS
-- **State Management**: Zustand
-- **Routing**: React Router DOM
-- **Voice Recognition**: Picovoice Porcupine
-- **Build Tool**: Vite
-
-### Installation & Setup
-
-1. Clone the repository
-
-```bash
-git clone [repository-url]
-```
-
-2. Install dependencies
-
-```bash
-npm install
-```
-
-3. Start development server
-
-```bash
-npm run dev
-```
-
-4. Build for production
-
-```bash
-npm run build
-```
-
-### Development Environment
-
-- Node.js
-- npm or yarn
-- TypeScript
-- ESLint
-
----
 
 ### License
 
